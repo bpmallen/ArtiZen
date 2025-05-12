@@ -119,3 +119,63 @@ export interface HarvardArtworksResponse {
   };
   records: HarvardArtwork[];
 }
+
+export interface MetArtwork {
+  objectID: number;
+  isHighlight: boolean;
+  accessionNumber: string | null;
+  accessionYear: string | null;
+  isPublicDomain: boolean;
+  primaryImage: string;
+  primaryImageSmall: string;
+  additionalImages: string[];
+  constituents: any[] | null; // May need more specific typing later
+  department: string;
+  objectName: string;
+  title: string;
+  culture: string | null;
+  period: string | null;
+  dynasty: string | null;
+  reign: string | null;
+  portfolio: string | null;
+  artistRole: string | null;
+  artistPrefix: string | null;
+  artistDisplayName: string | null;
+  artistDisplayBio: string | null;
+  artistSuffix: string | null;
+  artistAlphaSort: string | null;
+  artistNationality: string | null;
+  artistBeginDate: string | null;
+  artistEndDate: string | null;
+  artistGender: string | null;
+  artistWikidata_URL: string | null;
+  artistULAN_URL: string | null;
+  objectDate: string | null;
+  objectBeginDate: number | null;
+  objectEndDate: number | null;
+  medium: string | null;
+  dimensions: string | null;
+  measurements: any[] | null;
+  creditLine: string | null;
+  geographyType: string | null;
+  city: string | null;
+  state: string | null;
+  county: string | null;
+  country: string | null;
+  region: string | null;
+  subregion: string | null;
+  locale: string | null;
+  locus: string | null;
+  excavation: string | null;
+  river: string | null;
+  classification: string | null;
+  rightsAndReproduction: string | null;
+  linkResource: string | null;
+  metadataDate: string;
+  repository: string | null;
+  objectURL: string;
+  tags: any[] | null;
+  objectWikidata_URL: string | null;
+  isTimelineWork: boolean;
+  GalleryNumber: string | null;
+}
