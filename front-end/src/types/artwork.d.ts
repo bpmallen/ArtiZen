@@ -129,7 +129,7 @@ export interface MetArtwork {
   primaryImage: string;
   primaryImageSmall: string;
   additionalImages: string[];
-  constituents: any[] | null; // May need more specific typing later
+  constituents: any[] | null;
   department: string;
   objectName: string;
   title: string;
@@ -178,4 +178,14 @@ export interface MetArtwork {
   objectWikidata_URL: string | null;
   isTimelineWork: boolean;
   GalleryNumber: string | null;
+}
+
+export interface CombinedArtwork {
+  id: string | number;
+  title: string | null;
+  artistDisplayName: string | null;
+  primaryImageSmall: string | null;
+  source: "harvard" | "met";
+  harvardData?: HarvardArtwork;
+  metData?: MetArtwork;
 }
