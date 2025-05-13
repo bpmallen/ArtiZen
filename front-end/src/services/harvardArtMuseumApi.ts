@@ -3,20 +3,17 @@ const HARVARD_BASE_URL = "https://api.harvardartmuseums.org";
 const HARVARD_API_KEY = import.meta.env.VITE_HARVARD_API_KEY;
 
 export async function fetchHarvardArtworks(page: number = 1, pageSize: number = 10) {
+  const url = `${HARVARD_BASE_URL}/object?apikey=${HARVARD_API_KEY}&page=${page}&size=${pageSize}`;
+
   try {
-    const url = `${HARVARD_BASE_URL}/object?apikey=${HARVARD_API_KEY}&page=${page}&size=${pageSize}`;
-
     const response = await fetch(url);
-
     if (!response.ok) {
       console.error(`Harvard API Error: ${response.status} - ${response.statusText}`);
       throw new Error(`Failed to fetch Harvard artworks: ${response.status}`);
     }
 
     const data = response.json();
-
     console.log(`Harvard API response (Artwork List):`, data);
-
     return data;
   } catch (error: unknown) {
     if (error instanceof Error) {
