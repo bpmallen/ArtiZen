@@ -1,65 +1,40 @@
 import { useState, useCallback, useMemo } from "react";
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { fetchHarvardArtworks } from "../services/harvardArtMuseumApi";
 import { fetchMetArtworkById } from "../services/metropolitanMuseumApi.ts";
 import type { HarvardArtworksResponse, MetArtwork, CombinedArtwork } from "../types/artwork.d.ts";
 
 const initialMetObjectIds = [437133, 2, 436535, 326859, 45960];
+const HARVARD_PAGE_SIZE = 5;
+const INITIAL_COMBINED_COUNT = 10;
 
 function ArtworkListPage() {
   const [filter, setFilter] = useState<"all" | "harvard" | "met">("all");
+  const [harvardPage, setHarvardPage] = useState(1);
+
   const {
-    data: harvardData,
-    fetchNextPage: fetchNextHarvardPage,
-    hasNextPage: hasNextHarvardPage,
-    isFetchingNextPage: isFetchingHarvardNextPage,
     isLoading: isHarvardLoading,
     isError: isHarvardError,
+    data: harvardData,
     error: harvardError,
-  } = useInfiniteQuery<
-    HarvardArtworksResponse,
-    Error,
-    { pages: CombinedArtwork[][]; pageParams: unknown[] }
-  >({
-    queryKey: ["harvardArtworks"],
-    queryFn: ({ pageParam = 1 }) => fetchHarvardArtworks(pageParam as number),
-    getNextPageParam: (lastPage) => {
-      if (lastPage?.info?.next) {
-        const urlParams = new URLSearchParams(new URL(lastPage.info.next).search);
-        const nextPage = urlParams.get("page");
-        return nextPage ? parseInt(nextPage, 10) : undefined;
-      }
-      return undefined;
-    },
-    initialPageParam: 1,
-    select: (data) => ({
-      ...data,
-      pages: data.pages.map(
-        (page) =>
-          page?.records?.map((artwork) => ({
-            id: artwork.id,
-            title: artwork.title,
-            artistDisplayName: artwork.people?.[0]?.displayname || null,
-            primaryImageSmall: artwork.primaryimageurl,
-            source: "harvard" as const,
-            harvardData: artwork,
-          })) || []
-      ),
-    }),
+  } = useQuery<HarvardArtworksResponse, Error>({
+    queryKey: ["harvardArtworks", harvardPage, HARVARD_PAGE_SIZE],
+    queryFn: () => fetchHarvardArtworks(harvardPage, HARVARD_PAGE_SIZE),
   });
 
   const {
     isLoading: isMetArtworksLoading,
     isError: isMetArtworksError,
-    data: metArtworksRaw, // Renamed to avoid confusion
+    data: metArtworksRaw,
     error: metArtworksError,
   } = useQuery<MetArtwork[], Error>({
-    queryKey: ["metArtworks", initialMetObjectIds],
-    queryFn: () => Promise.all(initialMetObjectIds.map((id: number) => fetchMetArtworkById(id))),
+    queryKey: ["metArtworks", initialMetObjectIds.slice(0, 5)],
+    queryFn: () =>
+      Promise.all(initialMetObjectIds.slice(0, 5).map((id: number) => fetchMetArtworkById(id))),
     enabled: true,
   });
 
-  const metArtworks = useMemo(() => {
+  const metArtworks = useMemo((): CombinedArtwork[] => {
     return (
       metArtworksRaw?.map((artwork) => ({
         id: artwork.objectID,
@@ -73,27 +48,50 @@ function ArtworkListPage() {
   }, [metArtworksRaw]);
 
   const combinedArtworks = useMemo((): CombinedArtwork[] => {
-    const harvardItems = (harvardData?.pages?.flat() as CombinedArtwork[]) || [];
+    const harvardItems: CombinedArtwork[] =
+      harvardData?.records?.map((artwork) => ({
+        id: artwork.id,
+        title: artwork.title,
+        artistDisplayName: artwork.people?.[0]?.displayname || null,
+        primaryImageSmall: artwork.primaryimageurl,
+        source: "harvard" as const,
+        harvardData: artwork,
+      })) || [];
     const metItems: CombinedArtwork[] = metArtworks || [];
     return [...harvardItems, ...metItems];
   }, [harvardData, metArtworks]);
 
   const filteredArtworks = useMemo(() => {
-    if (filter === "all") return combinedArtworks;
-    return combinedArtworks.filter((artwork: CombinedArtwork) => artwork.source === filter);
+    if (filter === "all") return combinedArtworks.slice(0, INITIAL_COMBINED_COUNT);
+    return combinedArtworks
+      .filter((artwork: CombinedArtwork) => artwork.source === filter)
+      .slice(0, INITIAL_COMBINED_COUNT);
   }, [combinedArtworks, filter]);
 
   const isLoading = isHarvardLoading || isMetArtworksLoading;
   const isError = isHarvardError || isMetArtworksError;
-  const isFetching = isFetchingHarvardNextPage;
   const error = harvardError?.message || metArtworksError?.message;
+  const totalHarvardPages = harvardData?.info?.pages || 1;
 
   const handleFilterChange = useCallback(
     (newFilter: "all" | "harvard" | "met") => {
       setFilter(newFilter);
+      setHarvardPage(1);
     },
     [setFilter]
   );
+
+  const handleNextPage = useCallback(() => {
+    if (harvardPage < totalHarvardPages) {
+      setHarvardPage((prevPage) => prevPage + 1);
+    }
+  }, [harvardPage, totalHarvardPages]);
+
+  const handlePrevPage = useCallback(() => {
+    if (harvardPage > 1) {
+      setHarvardPage((prevPage) => prevPage - 1);
+    }
+  }, [harvardPage]);
 
   if (isLoading) return <div>Loading artworks...</div>;
   if (isError) return <div>Error loading artworks: {error}</div>;
@@ -112,20 +110,24 @@ function ArtworkListPage() {
           Metropolitan
         </button>
       </div>
-      {isFetching && <div>Loading more artworks...</div>}
       {filteredArtworks.map((artwork: CombinedArtwork) => (
         <div key={artwork.id}>
           {artwork.title} ({artwork.source})
         </div>
       ))}
+
       {filter !== "met" && (
-        <button onClick={() => fetchNextHarvardPage()} disabled={!hasNextHarvardPage || isFetching}>
-          {isFetching
-            ? "Loading more..."
-            : hasNextHarvardPage
-            ? "Next Page (Harvard)"
-            : "No more Harvard artworks"}
-        </button>
+        <div>
+          <button onClick={handlePrevPage} disabled={harvardPage === 1}>
+            Previous Page
+          </button>
+          <span>
+            Page {harvardPage} of {totalHarvardPages}
+          </span>
+          <button onClick={handleNextPage} disabled={harvardPage === totalHarvardPages}>
+            Next Page
+          </button>
+        </div>
       )}
     </div>
   );
