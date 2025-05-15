@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchHarvardArtworks } from "../services/harvardArtMuseumApi";
 import { fetchMetSearch, fetchMetArtworkById } from "../services/metropolitanMuseumApi";
 import type {
@@ -43,7 +43,9 @@ function ArtworkListPage() {
   // Populate Harvard batch when new data arrives
   useEffect(() => {
     if (!harvardData) return;
-    const valid = harvardData.records.filter((a) => !!a.primaryimageurl);
+    const valid = harvardData.records.filter(
+      (a) => Boolean(a.primaryimageurl) || (Array.isArray(a.images) && a.images.length > 0)
+    );
     setHarvardBatch(valid);
     setHarvardDisplayedIds([]);
   }, [harvardData, harvardPage]);
@@ -63,22 +65,20 @@ function ArtworkListPage() {
     isError: metErrorFlag,
     error: metError,
   } = useQuery<{ objectIDs: number[]; total: number }, Error>({
-    queryKey: ["met", metPage, INITIAL_BATCH_SIZE] as const,
-    queryFn: () => fetchMetSearch(metPage, INITIAL_BATCH_SIZE),
+    queryKey: ["met", metPage, ARTWORKS_PER_PAGE * 2] as const,
+    queryFn: () => fetchMetSearch(metPage, ARTWORKS_PER_PAGE * 2),
     enabled: filter !== "harvard",
   });
 
-  // Fetch full Met artworks when IDs arrive
   useEffect(() => {
     if (!metData?.objectIDs) return;
-    setMetDisplayedIds([]);
-    Promise.all(metData.objectIDs.map((id) => fetchMetArtworkById(id)))
+    Promise.all(metData.objectIDs.map(fetchMetArtworkById))
       .then((results) => {
-        const valid = results.filter((art) => !!art.primaryImageSmall);
-        setMetBatch(valid);
+        const valid = results.filter((a) => !!a.primaryImageSmall);
+        setMetBatch(valid.slice(0, ARTWORKS_PER_PAGE));
       })
       .catch(console.error);
-  }, [metData, metPage]);
+  }, [metData]);
 
   // Add next page of Met IDs to displayed list
   useEffect(() => {
@@ -88,19 +88,37 @@ function ArtworkListPage() {
     if (nextIds.length) setMetDisplayedIds((prev) => [...prev, ...nextIds]);
   }, [metBatch, metPage]);
 
+  const qc = useQueryClient();
+  useEffect(() => {
+    // as soon as metPage changes, kick off the next page’s search
+    qc.prefetchQuery({
+      queryKey: ["met", metPage + 1, ARTWORKS_PER_PAGE] as const,
+      queryFn: () => fetchMetSearch(metPage + 1, ARTWORKS_PER_PAGE),
+    });
+  }, [metPage, qc]);
+
   // Compute displayed Harvard artworks
   const harvardArtworks = useMemo<CombinedArtwork[]>(
     () =>
       harvardBatch
         .filter((a) => harvardDisplayedIds.includes(a.id))
-        .map((art) => ({
-          id: art.id,
-          title: art.title,
-          artistDisplayName: art.people?.[0]?.displayname || null,
-          primaryImageSmall: art.primaryimageurl || null,
-          source: "harvard",
-          harvardData: art,
-        })),
+        .map((art) => {
+          const primaryUrl = art.primaryimageurl;
+          const fallbackUrl =
+            Array.isArray(art.images) && art.images.length > 0
+              ? art.images[0].baseimageurl // or `.url` depending on your field
+              : null;
+          const imgUrl = primaryUrl || fallbackUrl || null;
+
+          return {
+            id: art.id,
+            title: art.title,
+            artistDisplayName: art.people?.[0]?.displayname || null,
+            primaryImageSmall: imgUrl,
+            source: "harvard",
+            harvardData: art,
+          };
+        }),
     [harvardBatch, harvardDisplayedIds]
   );
 
