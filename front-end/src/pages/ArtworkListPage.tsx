@@ -13,6 +13,12 @@ const INITIAL_BATCH_SIZE = 30;
 const ARTWORKS_PER_PAGE = 5;
 
 function ArtworkListPage() {
+  // Global search state
+  const [harvardSort, setHarvardSort] = useState<"dated" | "title">("dated");
+  const [metSort, setMetSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
+  const [inputValue, setInputValue] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+
   // Filter state
   const [filter, setFilter] = useState<"all" | "harvard" | "met">("all");
 
@@ -33,8 +39,15 @@ function ArtworkListPage() {
     isError: harvardErrorFlag,
     error: harvardError,
   } = useQuery<HarvardArtworksResponse, Error>({
-    queryKey: ["harvard", harvardPage] as const,
-    queryFn: () => fetchHarvardArtworks(harvardPage, INITIAL_BATCH_SIZE, "random"),
+    queryKey: ["harvard", harvardPage, searchTerm, harvardSort] as const,
+    queryFn: () =>
+      fetchHarvardArtworks(
+        harvardPage,
+        INITIAL_BATCH_SIZE,
+        harvardSort === "dated" ? "date" : "random",
+        searchTerm.trim() || undefined
+      ),
+
     enabled: filter !== "met",
     placeholderData: (old) => old,
     staleTime: 5 * 60_000,
@@ -65,8 +78,8 @@ function ArtworkListPage() {
     isError: metErrorFlag,
     error: metError,
   } = useQuery<{ objectIDs: number[]; total: number }, Error>({
-    queryKey: ["met", metPage, ARTWORKS_PER_PAGE * 2] as const,
-    queryFn: () => fetchMetSearch(metPage, ARTWORKS_PER_PAGE * 2),
+    queryKey: ["met", metPage, searchTerm] as const,
+    queryFn: () => fetchMetSearch(metPage, ARTWORKS_PER_PAGE * 2, searchTerm),
     enabled: filter !== "harvard",
   });
 
@@ -123,20 +136,26 @@ function ArtworkListPage() {
   );
 
   // Compute displayed Met artworks
-  const metArtworks = useMemo<CombinedArtwork[]>(
-    () =>
-      metBatch
-        .filter((a) => metDisplayedIds.includes(a.objectID))
-        .map((art) => ({
-          id: art.objectID,
-          title: art.title || null,
-          artistDisplayName: art.artistDisplayName || null,
-          primaryImageSmall: art.primaryImageSmall || null,
-          source: "met",
-          metData: art,
-        })),
-    [metBatch, metDisplayedIds]
-  );
+  const metArtworks = useMemo<CombinedArtwork[]>(() => {
+    // map your batch to CombinedArtwork
+    const list = metBatch.map((art) => ({
+      id: art.objectID,
+      title: art.title || null,
+      artistDisplayName: art.artistDisplayName || null,
+      primaryImageSmall: art.primaryImageSmall || null,
+      source: "met" as const,
+      metData: art,
+    }));
+
+    // now sort by objectDate
+    return list
+      .sort((a, b) => {
+        const dateA = a.metData?.objectEndDate ?? 0;
+        const dateB = b.metData?.objectEndDate ?? 0;
+        return metSort === "dateAsc" ? dateA - dateB : dateB - dateA;
+      })
+      .slice(0, ARTWORKS_PER_PAGE);
+  }, [metBatch, metSort]);
 
   // Combine and filter by source
   const combinedArtworks = useMemo(
@@ -188,6 +207,27 @@ function ArtworkListPage() {
           </div>
         </div>
       ))}
+      <input
+        type="text"
+        placeholder="Search artworks.."
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        style={{ width: "70%", padding: "0.5em", marginRight: "0.5em" }}
+      />
+      <button onClick={() => setSearchTerm(inputValue)}>Search</button>
+      <select value={harvardSort} onChange={(e) => setHarvardSort(e.target.value as any)}>
+        <option value="dated">Date</option>
+        <option value="random">Random</option>
+      </select>
+      <select
+        value={metSort}
+        onChange={(e) => setMetSort(e.target.value as any)}
+        style={{ marginLeft: "1em" }}
+      >
+        <option value="dateAsc">Date ↑</option>
+        <option value="dateDesc">Date ↓</option>
+      </select>
+
       <div style={{ margin: "1em 0" }}>
         <button onClick={handlePrev} disabled={harvardPage === 1 && metPage === 0}>
           Prev Page

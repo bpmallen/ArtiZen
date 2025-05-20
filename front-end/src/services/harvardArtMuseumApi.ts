@@ -5,12 +5,19 @@ const HARVARD_API_KEY = import.meta.env.VITE_HARVARD_API_KEY;
 export async function fetchHarvardArtworks(
   page: number = 1,
   pageSize: number = 10,
-  sortOrder: "date" | "random" = "date"
+  sortOrder: "date" | "random" = "date",
+  keyword?: string
 ) {
   try {
-    let url = `${HARVARD_BASE_URL}/object?apikey=${HARVARD_API_KEY}&page=${page}&size=${pageSize}`;
+    let url =
+      `${HARVARD_BASE_URL}/object?apikey=${HARVARD_API_KEY}` + `&page=${page}&size=${pageSize}`;
+
     if (sortOrder === "random") {
       url += `&sort=random`;
+    }
+
+    if (keyword) {
+      url += `&keyword=${encodeURIComponent(keyword)}`;
     }
 
     const response = await fetch(url);

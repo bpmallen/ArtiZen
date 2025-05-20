@@ -3,11 +3,14 @@ const MET_BASE_URL = "https://collectionapi.metmuseum.org/public/collection/v1";
 // This fetches a page of Met ObjectIDs, plus the total count
 export async function fetchMetSearch(
   pageIndex: number = 0,
-  pageSize: number = 30
+  pageSize: number = 30,
+  keyword?: string
 ): Promise<{ objectIDs: number[]; total: number }> {
   const params = new URLSearchParams({
     hasImages: "true",
-    q: "a", // The Met’s Collection API “search” endpoint always expects a non‐empty q parameter
+    q: keyword && keyword.trim().length > 0 ? keyword.trim() : "a",
+    offset: String(pageIndex * pageSize),
+    limit: String(pageSize),
   });
 
   const url = `${MET_BASE_URL}/search?${params.toString()}`;
