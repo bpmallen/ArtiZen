@@ -189,3 +189,15 @@ export interface CombinedArtwork {
   harvardData?: HarvardArtwork;
   metData?: MetArtwork;
 }
+export interface MetFilters {
+  title?: boolean;
+  artistOrCulture?: boolean;
+  tags?: boolean;
+  departmentId?: number;
+  isOnView?: boolean;
+  isHighlight?: boolean;
+  medium?: string;
+  geoLocation?: string;
+  dateBegin?: number;
+  dateEnd?: number;
+}

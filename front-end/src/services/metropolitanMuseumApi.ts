@@ -1,22 +1,39 @@
+import type { MetFilters } from "../types/artwork";
+
 const MET_BASE_URL = "https://collectionapi.metmuseum.org/public/collection/v1";
 
-// This fetches a page of Met ObjectIDs, plus the total count
+/**
+ * Fetch objectIDs from the Met Museum API based on search term and optional filters.
+ */
 export async function fetchMetSearch(
   pageIndex: number = 0,
   pageSize: number = 30,
-  keyword?: string
+  keyword?: string,
+  filters?: MetFilters
 ): Promise<{ objectIDs: number[]; total: number }> {
   const params = new URLSearchParams({
+    q: keyword?.trim() || "a",
     hasImages: "true",
-    q: keyword && keyword.trim().length > 0 ? keyword.trim() : "a",
-    offset: String(pageIndex * pageSize),
-    limit: String(pageSize),
   });
 
-  const url = `${MET_BASE_URL}/search?${params.toString()}`;
+  if (filters?.title) params.append("title", "true");
+  if (filters?.artistOrCulture) params.append("artistOrCulture", "true");
+  if (filters?.tags) params.append("tags", "true");
+  if (filters?.departmentId !== undefined)
+    params.append("departmentId", String(filters.departmentId));
+  if (filters?.isOnView) params.append("isOnView", "true");
+  if (filters?.isHighlight) params.append("isHighlight", "true");
+  if (filters?.medium) params.append("medium", filters.medium);
+  if (filters?.geoLocation) params.append("geoLocation", filters.geoLocation);
+  if (filters?.dateBegin !== undefined && filters?.dateEnd !== undefined) {
+    params.append("dateBegin", String(filters.dateBegin));
+    params.append("dateEnd", String(filters.dateEnd));
+  }
+
+  const url = `https://collectionapi.metmuseum.org/public/collection/v1/search?${params.toString()}`;
   const response = await fetch(url);
+
   if (!response.ok) {
-    console.error(`Met Search API Error: ${response.status}`, response.statusText);
     throw new Error(`Met search failed: ${response.status}`);
   }
 
@@ -40,14 +57,12 @@ export async function fetchMetArtworkById(id: number) {
     const url = `${MET_BASE_URL}/objects/${id}`;
     const response = await fetch(url);
     if (!response.ok) {
-      console.error(`Met API Error (ID: ${id}): ${response.status} - ${response.statusText}`);
-      throw new Error(`Failed to fetch Met artwork with ID ${id}: ${response.status}`);
+      console.warn(`Skipping invalid Met artwork ID: ${id}`);
+      return null; // ✅ Don't throw
     }
-    const data = await response.json();
-    console.log(`Met API Response (ID: ${id}):`, data);
-    return data;
+    return await response.json();
   } catch (error: any) {
-    console.error(`Error fetching Met artwork with ID ${id}:`, error.message);
-    throw error;
+    console.warn(`Error fetching Met artwork with ID ${id}:`, error.message);
+    return null; // ✅ Don't throw
   }
 }
