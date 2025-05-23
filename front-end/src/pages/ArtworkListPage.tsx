@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { fetchMetSearch, fetchMetArtworkById } from "../services/metropolitanMuseumApi";
 import type { CombinedArtwork, MetArtwork, MetFilters } from "../types/artwork";
 
 const ARTWORKS_PER_PAGE = 5;
+const FETCH_IDS_PER_PAGE = 50;
 
 function ArtworkListPage() {
   const [filter, setFilter] = useState<"all" | "harvard" | "met">("met");
@@ -12,55 +12,75 @@ function ArtworkListPage() {
   const [searchTerm, setSearchTerm] = useState(
     () => seedTerms[Math.floor(Math.random() * seedTerms.length)]
   );
+  const [departments, setDepartments] = useState<{ departmentId: number; displayName: string }[]>(
+    []
+  );
 
-  const [metPage, setMetPage] = useState(0);
-  const [metSort, setMetSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
   const [metFilters, setMetFilters] = useState<MetFilters>({});
-  const [metBatchLoading, setMetBatchLoading] = useState(false);
-
-  const {
-    data: metData,
-    isLoading: metLoading,
-    isError: metError,
-    error,
-  } = useQuery({
-    queryKey: ["met", metPage, searchTerm, metFilters],
-    queryFn: () => fetchMetSearch(metPage, ARTWORKS_PER_PAGE * 2, searchTerm, metFilters),
-    enabled: filter !== "harvard",
-  });
-
+  const [allMetIDs, setAllMetIDs] = useState<number[]>([]);
+  const [metPage, setMetPage] = useState(0);
   const [metBatch, setMetBatch] = useState<MetArtwork[]>([]);
-  const [metDisplayedIds, setMetDisplayedIds] = useState<number[]>([]);
+  const [metBatchLoading, setMetBatchLoading] = useState(false);
+  const [metSort, setMetSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
+  const [metError, setMetError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!metData?.objectIDs) return;
+    fetch("https://collectionapi.metmuseum.org/public/collection/v1/departments")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.departments)) {
+          setDepartments(data.departments);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch departments:", err);
+      });
+  }, []);
+
+  // Fetch all matching objectIDs on search or filter change
+  useEffect(() => {
+    setMetBatch([]); // Clear previous batch
     setMetBatchLoading(true);
-    console.log("🔎 Raw objectIDs:", metData.objectIDs);
-    Promise.all(metData.objectIDs.map(fetchMetArtworkById))
+    fetchMetSearch(searchTerm, metFilters)
+      .then((res) => {
+        setAllMetIDs(res.objectIDs);
+        setMetPage(0); // reset to first page
+        setMetError(null);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch Met IDs:", err);
+        setMetError(err);
+        setAllMetIDs([]);
+      })
+      .finally(() => setMetBatchLoading(false));
+  }, [searchTerm, metFilters]);
+
+  // On page change, fetch artworks from the relevant slice of IDs
+  useEffect(() => {
+    const start = metPage * FETCH_IDS_PER_PAGE;
+    const end = start + FETCH_IDS_PER_PAGE;
+    const currentIds = allMetIDs.slice(start, end);
+    if (currentIds.length === 0) {
+      setMetBatch([]);
+      return;
+    }
+
+    setMetBatchLoading(true);
+    Promise.all(currentIds.map(fetchMetArtworkById))
       .then((results) => {
-        console.log("Fetched Met results:", results);
         const valid = results.filter((a): a is MetArtwork => !!a && !!a.primaryImageSmall);
-        console.log("Valid Met artworks:", valid);
-        setMetBatch(valid);
+        setMetBatch(valid.slice(0, ARTWORKS_PER_PAGE)); // Display 5
+      })
+      .catch((err) => {
+        console.error("Error loading batch:", err);
+        setMetBatch([]);
       })
       .finally(() => {
         setMetBatchLoading(false);
       });
-  }, [metData]);
-
-  useEffect(() => {
-    if (!metBatch.length) return;
-    const pool = metBatch.filter((a) => !metDisplayedIds.includes(a.objectID));
-    const nextIds = pool.slice(0, ARTWORKS_PER_PAGE).map((a) => a.objectID);
-    if (nextIds.length) setMetDisplayedIds((prev) => [...prev, ...nextIds]);
-  }, [metBatch, metPage]);
-
-  useEffect(() => {
-    console.log("Met batch:", metBatch);
-  }, [metBatch]);
+  }, [metPage, allMetIDs]);
 
   const metArtworks = useMemo<CombinedArtwork[]>(() => {
-    if (!metBatch.length) return [];
     return metBatch
       .map((art) => ({
         id: art.objectID,
@@ -79,7 +99,7 @@ function ArtworkListPage() {
 
   const combinedArtworks = useMemo(() => {
     if (filter === "met") return metArtworks;
-    return []; // phase Harvard in later
+    return []; // phase in Harvard later
   }, [filter, metArtworks]);
 
   const handleNext = useCallback(() => {
@@ -109,7 +129,7 @@ function ArtworkListPage() {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
         />
-        <button onClick={() => setSearchTerm(inputValue)}>Search</button>
+        <button onClick={() => setSearchTerm(inputValue || "a")}>Search</button>
       </div>
 
       <div style={{ marginTop: "1em" }}>
@@ -121,10 +141,80 @@ function ArtworkListPage() {
           </select>
         </label>
       </div>
+      <div style={{ marginTop: "1em", border: "1px solid #ccc", padding: "1em" }}>
+        <strong>Met Filters</strong>
 
-      {combinedArtworks.length === 0 && !metLoading && !metBatchLoading && (
-        <p>No artworks found.</p>
-      )}
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              onChange={(e) => setMetFilters((f) => ({ ...f, isHighlight: e.target.checked }))}
+            />
+            Show highlights only
+          </label>
+        </div>
+
+        <div>
+          <label>
+            Department:
+            <select
+              onChange={(e) => {
+                const selectedId = e.target.value ? Number(e.target.value) : undefined;
+                setMetFilters((f) => ({ ...f, departmentId: selectedId }));
+
+                // ✅ Fallback query if nothing is typed
+                if (!inputValue.trim()) {
+                  setInputValue("art");
+                  setSearchTerm("art");
+                }
+              }}
+            >
+              <option value="">All</option>
+              {departments.map((dept) => (
+                <option key={dept.departmentId} value={dept.departmentId}>
+                  {dept.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div>
+          <label>
+            Medium:
+            <input
+              type="text"
+              placeholder="e.g. Sculpture"
+              onChange={(e) =>
+                setMetFilters((f) => ({ ...f, medium: e.target.value || undefined }))
+              }
+            />
+          </label>
+        </div>
+
+        <div>
+          <label>
+            Date Begin:
+            <input
+              type="number"
+              onChange={(e) =>
+                setMetFilters((f) => ({ ...f, dateBegin: Number(e.target.value) || undefined }))
+              }
+            />
+          </label>
+          <label style={{ marginLeft: "1em" }}>
+            Date End:
+            <input
+              type="number"
+              onChange={(e) =>
+                setMetFilters((f) => ({ ...f, dateEnd: Number(e.target.value) || undefined }))
+              }
+            />
+          </label>
+        </div>
+      </div>
+
+      {combinedArtworks.length === 0 && !metBatchLoading && <p>No artworks found.</p>}
 
       {combinedArtworks.map((art) => (
         <div key={art.id} style={{ margin: "1em 0" }}>
@@ -145,14 +235,16 @@ function ArtworkListPage() {
         <button onClick={handlePrev} disabled={metPage === 0}>
           Prev Page
         </button>
-        <button onClick={handleNext} disabled={metLoading}>
+        <button
+          onClick={handleNext}
+          disabled={metBatchLoading || (metPage + 1) * FETCH_IDS_PER_PAGE >= allMetIDs.length}
+        >
           Next Page
         </button>
       </div>
 
-      {(metLoading || metBatchLoading) && <p>Loading…</p>}
-      {metError && <p>Error: {error?.message}</p>}
-      <button onClick={() => setMetFilters({ isHighlight: true })}>Show highlights only</button>
+      {(metBatchLoading || allMetIDs.length === 0) && <p>Loading…</p>}
+      {metError && <p>Error: {metError.message}</p>}
     </div>
   );
 }

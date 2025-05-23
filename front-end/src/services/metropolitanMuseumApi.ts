@@ -6,13 +6,11 @@ const MET_BASE_URL = "https://collectionapi.metmuseum.org/public/collection/v1";
  * Fetch objectIDs from the Met Museum API based on search term and optional filters.
  */
 export async function fetchMetSearch(
-  pageIndex: number = 0,
-  pageSize: number = 30,
   keyword?: string,
   filters?: MetFilters
 ): Promise<{ objectIDs: number[]; total: number }> {
   const params = new URLSearchParams({
-    q: keyword?.trim() || "a",
+    q: keyword && keyword.trim() ? keyword.trim() : "art",
     hasImages: "true",
   });
 
@@ -42,12 +40,8 @@ export async function fetchMetSearch(
     objectIDs: number[] | null;
   };
 
-  const allIds = data.objectIDs ?? [];
-  const start = pageIndex * pageSize;
-  const pageIds = allIds.slice(start, start + pageSize);
-
   return {
-    objectIDs: pageIds,
+    objectIDs: data.objectIDs ?? [],
     total: data.total,
   };
 }
