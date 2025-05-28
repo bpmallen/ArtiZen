@@ -166,6 +166,16 @@ function ArtworkListPage() {
             />
           </label>
         </div>
+        <label>
+          Sort by date:
+          <select
+            value={metSort}
+            onChange={(e) => setMetSort(e.target.value as "dateAsc" | "dateDesc")}
+          >
+            <option value="dateAsc">Date ↑</option>
+            <option value="dateDesc">Date ↓</option>
+          </select>
+        </label>
       </div>
 
       {/* Results */}
