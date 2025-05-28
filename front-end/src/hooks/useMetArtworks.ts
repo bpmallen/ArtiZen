@@ -66,7 +66,9 @@ export function useMetArtworks(
       setMetBatch([]);
       return;
     }
+    let isCurrent = true;
     setLoading(true);
+
     // pick how many raw IDs to pull in (50 for browse-all, 5 for a filtered search)
     const rawCount = isBrowsingAll ? FETCH_IDS_PER_PAGE : ARTWORKS_PER_PAGE;
     const start = page * rawCount;
@@ -75,15 +77,23 @@ export function useMetArtworks(
 
     Promise.all(pageIDs.map(fetchMetArtworkById))
       .then((results) => {
+        if (!isCurrent) return;
         const valid = results.filter((a): a is MetArtwork => !!a && !!a.primaryImageSmall);
         setMetBatch(valid.slice(0, ARTWORKS_PER_PAGE));
       })
       .catch((err) => {
+        if (!isCurrent) return;
         console.error("Error fetching Met batch:", err);
         setError(err);
         setMetBatch([]);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (isCurrent) setLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
   }, [allMetIDs, page, isBrowsingAll]);
 
   //  4) Derived & sorted combined artworks
