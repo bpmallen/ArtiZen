@@ -9,10 +9,10 @@ function ArtworkListPage() {
   const [metSort, setMetSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
   const [filter, setFilter] = useState<"all" | "harvard" | "met">("met");
   const [inputValue, setInputValue] = useState("");
-  const seedTerms = ["art", "sculpture", "cat", "portrait", "flower", "greek", "statue"];
-  const [searchTerm, setSearchTerm] = useState(
-    () => seedTerms[Math.floor(Math.random() * seedTerms.length)]
-  );
+  // const seedTerms = ["art", "sculpture", "cat", "portrait", "flower", "greek", "statue"];
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const FETCH_IDS_PER_PAGE = 50;
 
   const {
     artworks: metArtworks,
@@ -21,6 +21,8 @@ function ArtworkListPage() {
     error: metError,
   } = useMetArtworks(searchTerm, metFilters, metPage, metSort);
 
+  console.log("Total Met IDs:", totalMetIDs);
+
   const { departments } = useMetDepartments();
 
   const combinedArtworks = useMemo(() => {
@@ -28,7 +30,8 @@ function ArtworkListPage() {
     return []; // Harvard to be added
   }, [filter, metArtworks]);
 
-  const totalPages = Math.ceil(totalMetIDs / 50);
+  const totalPages = Math.ceil(totalMetIDs / FETCH_IDS_PER_PAGE);
+  console.log("Total Met IDs:", totalMetIDs, "Total Pages:", totalPages);
 
   const handleNext = useCallback(() => {
     setMetPage((p) => p + 1);
@@ -44,40 +47,53 @@ function ArtworkListPage() {
       <h2>Exhibition Curation Platform</h2>
 
       {/* Filter Tabs */}
-      <div>
+      <div className="flex gap-2">
         {(["all", "harvard", "met"] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)} disabled={filter === f}>
+          <button
+            key={f}
+            onClick={() => {
+              if (f === "all") {
+                setFilter("met");
+                setSearchTerm("");
+                setInputValue("");
+                setMetFilters({});
+                setMetPage(0);
+              } else if (f === "harvard") {
+                setFilter("harvard");
+              } else {
+                // f === "met"
+                setFilter("met");
+              }
+            }}
+            className={filter === f ? "font-bold" : ""}
+          >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
       </div>
 
-      {/* Search */}
-      <div style={{ marginTop: "1em" }}>
-        <input
-          type="text"
-          placeholder="Search artworks..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-        />
-        <button onClick={() => setSearchTerm(inputValue || "a")}>Search</button>
-      </div>
-
-      {/* Sort */}
-      <div style={{ marginTop: "1em" }}>
-        <label>
-          Sort by date:
-          <select value={metSort} onChange={(e) => setMetSort(e.target.value as any)}>
-            <option value="dateAsc">Date ↑</option>
-            <option value="dateDesc">Date ↓</option>
-          </select>
-        </label>
-      </div>
-
       {/* Met Filters */}
       <div style={{ marginTop: "1em", border: "1px solid #ccc", padding: "1em" }}>
         <strong>Met Filters</strong>
-
+        {/* Search Bar */}
+        <div className="mt-4 flex gap-2">
+          <input
+            type="text"
+            className="border rounded px-3 py-1 flex-grow"
+            placeholder="Type to search the Met collection…"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+          />
+          <button
+            className="px-4 py-1 bg-blue-600 text-white rounded"
+            onClick={() => {
+              setSearchTerm(inputValue.trim() || ""); // if empty, goes into “browse all”
+              setMetPage(0); // reset to page 0
+            }}
+          >
+            Search
+          </button>
+        </div>
         <div>
           <label>
             <input
@@ -93,13 +109,18 @@ function ArtworkListPage() {
             Department:
             <select
               onChange={(e) => {
-                const selectedId = e.target.value ? Number(e.target.value) : undefined;
-                setMetFilters((f) => ({ ...f, departmentId: selectedId }));
-
-                if (!inputValue.trim()) {
-                  setInputValue("art");
-                  setSearchTerm("art");
+                const val = e.target.value;
+                if (!val) {
+                  // user picked "All" → truly clear every filter
+                  setMetFilters({});
+                } else {
+                  setMetFilters((f) => ({
+                    ...f,
+                    departmentId: Number(val),
+                  }));
                 }
+                // reset back to page 0 whenever you change department
+                setMetPage(0);
               }}
             >
               <option value="">All</option>
@@ -148,6 +169,9 @@ function ArtworkListPage() {
       </div>
 
       {/* Results */}
+      {/* Loading / Error */}
+      {metBatchLoading && <p>Loading…</p>}
+      {metError && <p>Error: {metError.message}</p>}
       {combinedArtworks.length === 0 && !metBatchLoading && <p>No artworks found.</p>}
 
       {combinedArtworks.map((art) => (
@@ -209,10 +233,6 @@ function ArtworkListPage() {
           Next
         </button>
       </div>
-
-      {/* Loading / Error */}
-      {metBatchLoading && <p>Loading…</p>}
-      {metError && <p>Error: {metError.message}</p>}
     </div>
   );
 }

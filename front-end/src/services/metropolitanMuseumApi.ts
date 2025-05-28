@@ -60,3 +60,22 @@ export async function fetchMetArtworkById(id: number) {
     return null; // ✅ Don't throw
   }
 }
+
+export async function fetchAllMetObjectIDs(): Promise<number[]> {
+  try {
+    const response = await fetch(
+      "https://collectionapi.metmuseum.org/public/collection/v1/objects"
+    );
+    const data = await response.json();
+
+    if (!data.objectIDs || !Array.isArray(data.objectIDs)) {
+      console.warn("Failed to fetch full Met object list.");
+      return [];
+    }
+
+    return data.objectIDs; // ✅ Should return ~480,000 artwork IDs
+  } catch (error: any) {
+    console.error("Error fetching all Met object IDs:", error.message);
+    return [];
+  }
+}
