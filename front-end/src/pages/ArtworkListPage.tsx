@@ -1,106 +1,34 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { fetchMetSearch, fetchMetArtworkById } from "../services/metropolitanMuseumApi";
-import type { CombinedArtwork, MetArtwork, MetFilters } from "../types/artwork";
-
-const ARTWORKS_PER_PAGE = 5;
-const FETCH_IDS_PER_PAGE = 50;
+import { useState, useMemo, useCallback } from "react";
+import type { MetFilters } from "../types/artwork";
+import { useMetDepartments } from "../hooks/useMetDepartments";
+import { useMetArtworks } from "../hooks/useMetArtworks"; // ✅ correct path
 
 function ArtworkListPage() {
+  const [metPage, setMetPage] = useState(0);
+  const [metFilters, setMetFilters] = useState<MetFilters>({});
+  const [metSort, setMetSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
   const [filter, setFilter] = useState<"all" | "harvard" | "met">("met");
   const [inputValue, setInputValue] = useState("");
   const seedTerms = ["art", "sculpture", "cat", "portrait", "flower", "greek", "statue"];
   const [searchTerm, setSearchTerm] = useState(
     () => seedTerms[Math.floor(Math.random() * seedTerms.length)]
   );
-  const [departments, setDepartments] = useState<{ departmentId: number; displayName: string }[]>(
-    []
-  );
 
-  const [metFilters, setMetFilters] = useState<MetFilters>({});
-  const [allMetIDs, setAllMetIDs] = useState<number[]>([]);
-  const [metPage, setMetPage] = useState(0);
-  const [metBatch, setMetBatch] = useState<MetArtwork[]>([]);
-  const [metBatchLoading, setMetBatchLoading] = useState(false);
-  const [metSort, setMetSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
-  const [metError, setMetError] = useState<Error | null>(null);
+  const {
+    artworks: metArtworks,
+    total: totalMetIDs,
+    loading: metBatchLoading,
+    error: metError,
+  } = useMetArtworks(searchTerm, metFilters, metPage, metSort);
 
-  useEffect(() => {
-    fetch("https://collectionapi.metmuseum.org/public/collection/v1/departments")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data.departments)) {
-          setDepartments(data.departments);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to fetch departments:", err);
-      });
-  }, []);
-
-  // Fetch all matching objectIDs on search or filter change
-  useEffect(() => {
-    setMetBatch([]); // Clear previous batch
-    setMetBatchLoading(true);
-    fetchMetSearch(searchTerm, metFilters)
-      .then((res) => {
-        setAllMetIDs(res.objectIDs);
-        setMetPage(0); // reset to first page
-        setMetError(null);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch Met IDs:", err);
-        setMetError(err);
-        setAllMetIDs([]);
-      })
-      .finally(() => setMetBatchLoading(false));
-  }, [searchTerm, metFilters]);
-
-  // On page change, fetch artworks from the relevant slice of IDs
-  useEffect(() => {
-    const start = metPage * FETCH_IDS_PER_PAGE;
-    const end = start + FETCH_IDS_PER_PAGE;
-    const currentIds = allMetIDs.slice(start, end);
-    if (currentIds.length === 0) {
-      setMetBatch([]);
-      return;
-    }
-
-    setMetBatchLoading(true);
-    Promise.all(currentIds.map(fetchMetArtworkById))
-      .then((results) => {
-        const valid = results.filter((a): a is MetArtwork => !!a && !!a.primaryImageSmall);
-        setMetBatch(valid.slice(0, ARTWORKS_PER_PAGE)); // Display 5
-      })
-      .catch((err) => {
-        console.error("Error loading batch:", err);
-        setMetBatch([]);
-      })
-      .finally(() => {
-        setMetBatchLoading(false);
-      });
-  }, [metPage, allMetIDs]);
-
-  const metArtworks = useMemo<CombinedArtwork[]>(() => {
-    return metBatch
-      .map((art) => ({
-        id: art.objectID,
-        title: art.title || null,
-        artistDisplayName: art.artistDisplayName || null,
-        primaryImageSmall: art.primaryImageSmall || null,
-        source: "met" as const,
-        metData: art,
-      }))
-      .sort((a, b) => {
-        const dateA = a.metData?.objectEndDate ?? 0;
-        const dateB = b.metData?.objectEndDate ?? 0;
-        return metSort === "dateAsc" ? dateA - dateB : dateB - dateA;
-      });
-  }, [metBatch, metSort]);
+  const { departments } = useMetDepartments();
 
   const combinedArtworks = useMemo(() => {
     if (filter === "met") return metArtworks;
-    return []; // phase in Harvard later
+    return []; // Harvard to be added
   }, [filter, metArtworks]);
+
+  const totalPages = Math.ceil(totalMetIDs / 50);
 
   const handleNext = useCallback(() => {
     setMetPage((p) => p + 1);
@@ -112,8 +40,10 @@ function ArtworkListPage() {
 
   return (
     <div>
+      <h1 className="text-4xl font-bold text-blue-600">Tailwind Works!</h1>
       <h2>Exhibition Curation Platform</h2>
 
+      {/* Filter Tabs */}
       <div>
         {(["all", "harvard", "met"] as const).map((f) => (
           <button key={f} onClick={() => setFilter(f)} disabled={filter === f}>
@@ -122,6 +52,7 @@ function ArtworkListPage() {
         ))}
       </div>
 
+      {/* Search */}
       <div style={{ marginTop: "1em" }}>
         <input
           type="text"
@@ -132,6 +63,7 @@ function ArtworkListPage() {
         <button onClick={() => setSearchTerm(inputValue || "a")}>Search</button>
       </div>
 
+      {/* Sort */}
       <div style={{ marginTop: "1em" }}>
         <label>
           Sort by date:
@@ -141,6 +73,8 @@ function ArtworkListPage() {
           </select>
         </label>
       </div>
+
+      {/* Met Filters */}
       <div style={{ marginTop: "1em", border: "1px solid #ccc", padding: "1em" }}>
         <strong>Met Filters</strong>
 
@@ -162,7 +96,6 @@ function ArtworkListPage() {
                 const selectedId = e.target.value ? Number(e.target.value) : undefined;
                 setMetFilters((f) => ({ ...f, departmentId: selectedId }));
 
-                // ✅ Fallback query if nothing is typed
                 if (!inputValue.trim()) {
                   setInputValue("art");
                   setSearchTerm("art");
@@ -214,6 +147,7 @@ function ArtworkListPage() {
         </div>
       </div>
 
+      {/* Results */}
       {combinedArtworks.length === 0 && !metBatchLoading && <p>No artworks found.</p>}
 
       {combinedArtworks.map((art) => (
@@ -231,19 +165,53 @@ function ArtworkListPage() {
         </div>
       ))}
 
-      <div style={{ marginTop: "1em" }}>
-        <button onClick={handlePrev} disabled={metPage === 0}>
-          Prev Page
-        </button>
+      {/* Pagination */}
+      <div className="mt-6 flex justify-center items-center flex-wrap gap-2">
         <button
-          onClick={handleNext}
-          disabled={metBatchLoading || (metPage + 1) * FETCH_IDS_PER_PAGE >= allMetIDs.length}
+          className="px-3 py-1 rounded border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          onClick={handlePrev}
+          disabled={metPage === 0}
         >
-          Next Page
+          Prev
+        </button>
+
+        {(() => {
+          const pagesToShow = 5;
+          const half = Math.floor(pagesToShow / 2);
+          let start = Math.max(0, metPage - half);
+          let end = start + pagesToShow;
+
+          if (end > totalPages) {
+            end = totalPages;
+            start = Math.max(0, totalPages - pagesToShow);
+          }
+
+          return Array.from({ length: end - start }, (_, i) => start + i).map((p) => (
+            <button
+              key={p}
+              onClick={() => setMetPage(p)}
+              className={`px-3 py-1 rounded border ${
+                p === metPage
+                  ? "text-black font-bold underline underline-offset-4 decoration-2 decoration-blue-600"
+                  : "bg-white text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              {p + 1}
+            </button>
+          ));
+        })()}
+
+        <button
+          className="px-3 py-1 rounded border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+          onClick={handleNext}
+          disabled={(metPage + 1) * 50 >= totalMetIDs}
+        >
+          Next
         </button>
       </div>
 
-      {(metBatchLoading || allMetIDs.length === 0) && <p>Loading…</p>}
+      {/* Loading / Error */}
+      {metBatchLoading && <p>Loading…</p>}
       {metError && <p>Error: {metError.message}</p>}
     </div>
   );
