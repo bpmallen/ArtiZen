@@ -210,15 +210,42 @@ export interface CombinedArtwork {
   metData?: MetArtwork;
   harvardData?: HarvardArtwork;
 }
-export interface MetFilters {
-  title?: boolean;
-  artistOrCulture?: boolean;
-  tags?: boolean;
-  departmentId?: number;
-  isOnView?: boolean;
-  isHighlight?: boolean;
-  medium?: string;
-  geoLocation?: string;
+
+export interface DateRangeFilter {
   dateBegin?: number;
   dateEnd?: number;
 }
+
+export interface MetFilters extends DateRangeFilter {
+  q?: string;
+  title?: boolean;
+  tags?: boolean;
+  isOnView?: boolean;
+  isHighlight?: boolean;
+  artistOrCulture?: boolean;
+  departmentId?: number | number[];
+  hasImages?: boolean;
+  medium?: string;
+  geoLocation?: string | string[];
+}
+
+export interface HarvardFilters extends DateRangeFilter {
+  q?: string;
+  hasimage?: boolean;
+  classification?: string | string[];
+  century?: string | string[];
+  culture?: string | string[];
+  person?: number | string;
+  place?: number | string;
+  exhibition?: number | string;
+  gallery?: number | string;
+  group?: number | string;
+  technique?: string | string[];
+  worktype?: string | string[];
+  keyword?: string;
+  color?: string;
+}
+
+export type Filters =
+  | { source: "met"; filters: MetFilters }
+  | { source: "harvard"; filters: HarvardFilters };

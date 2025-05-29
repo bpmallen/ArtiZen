@@ -1,7 +1,5 @@
-// services/harvardArtMuseumApi.ts
-
 import type {
-  MetFilters,
+  HarvardFilters,
   CombinedArtwork,
   HarvardArtworksResponse,
   HarvardArtwork,
@@ -14,7 +12,7 @@ export async function fetchHarvardPage(
   page: number,
   pageSize: number,
   searchTerm: string,
-  filters: MetFilters,
+  filters: HarvardFilters,
   sort: "dateAsc" | "dateDesc"
 ): Promise<{ artworks: CombinedArtwork[]; total: number }> {
   if (!HARVARD_API_KEY) {
@@ -29,12 +27,18 @@ export async function fetchHarvardPage(
     size: String(pageSize),
     hasimage: "1",
     ...(searchTerm && { q: searchTerm }),
-    ...(filters.medium && { classification: filters.medium }),
     ...(filters.dateBegin && { datebegin: String(filters.dateBegin) }),
     ...(filters.dateEnd && { dateend: String(filters.dateEnd) }),
-    // sort on the numeric `datebegin` field to avoid ES errors
     sort: sort === "dateAsc" ? "datebegin" : "-datebegin",
   });
+
+  if (searchTerm) params.set("q", searchTerm);
+  if (filters.classification) params.set("classification", String(filters.classification));
+  if (filters.dateBegin) params.set("datebegin", String(filters.dateBegin));
+  if (filters.dateEnd) params.set("dateend", String(filters.dateEnd));
+  if (filters.century) params.set("century", String(filters.century));
+  if (filters.culture) params.set("culture", String(filters.culture));
+  if (filters.keyword) params.set("keyword", filters.keyword);
 
   // Include only the fields we need (plus images for thumbnails)
   params.set(

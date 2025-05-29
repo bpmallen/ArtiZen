@@ -257,6 +257,47 @@ function ArtworkListPage() {
               />
             </label>
           </div>
+          {/* Century */}
+          <label className="block mt-2">
+            Century:
+            <input
+              type="text"
+              className="ml-2 border rounded px-2"
+              placeholder="e.g. 17th century"
+              onChange={(e) => {
+                setHarvFilters((f) => ({ ...f, century: e.target.value || undefined }));
+                setHarvPage(0);
+              }}
+            />
+          </label>
+
+          {/* Culture */}
+          <label className="block mt-2">
+            Culture:
+            <input
+              type="text"
+              className="ml-2 border rounded px-2"
+              placeholder="e.g. Greek"
+              onChange={(e) => {
+                setHarvFilters((f) => ({ ...f, culture: e.target.value || undefined }));
+                setHarvPage(0);
+              }}
+            />
+          </label>
+
+          {/* Keyword */}
+          <label className="block mt-2">
+            Keyword:
+            <input
+              type="text"
+              className="ml-2 border rounded px-2"
+              placeholder="Search titles, artists, etc."
+              onChange={(e) => {
+                setHarvFilters((f) => ({ ...f, keyword: e.target.value || undefined }));
+                setHarvPage(0);
+              }}
+            />
+          </label>
 
           {/* Sort */}
           <label className="block mt-2">
