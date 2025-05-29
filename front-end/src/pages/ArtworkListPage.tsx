@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import type { MetFilters, HarvardFilters } from "../types/artwork";
 import { useMetDepartments } from "../hooks/useMetDepartments";
 import { useMetArtworks } from "../hooks/useMetArtworks";
@@ -38,9 +38,20 @@ function ArtworkListPage() {
     error: harvError,
   } = useHarvardArtworks(harvSearchTerm, harvFilters, harvPage, harvSort);
 
+  // 1) Make a sorted copy by `dateend`
+  const harvToDisplay = React.useMemo(() => {
+    // shallow-copy so we don’t mutate original
+    const copy = [...harvArtworks];
+    return copy.sort((a, b) => {
+      const ae = a.harvardSlim?.dateend ?? 0;
+      const be = b.harvardSlim?.dateend ?? 0;
+      return harvSort === "dateAsc" ? ae - be : be - ae;
+    });
+  }, [harvArtworks, harvSort]);
+
   // ——— Tab switching ———
   const [filter, setFilter] = useState<"all" | "harvard" | "met">("met");
-  const artworks = filter === "harvard" ? harvArtworks : metArtworks;
+  const artworks = filter === "harvard" ? harvToDisplay : metArtworks;
   const total = filter === "harvard" ? totalHarv : totalMet;
   const loading = filter === "harvard" ? harvLoading : metLoading;
   const error = filter === "harvard" ? harvError : metError;
@@ -247,7 +258,7 @@ function ArtworkListPage() {
       {/* Loading / Error */}
       {loading && <p>Loading…</p>}
       {error && <p className="text-red-600">Error: {error.message}</p>}
-      {!loading && artworks.length === 0 && <p>No artworks found.</p>}
+      {!loading && total === 0 && <p>No artworks found.</p>}
 
       {/* Results */}
       {artworks.map((art) => (
