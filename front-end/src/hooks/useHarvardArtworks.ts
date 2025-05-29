@@ -1,11 +1,10 @@
-// hooks/useMetArtworks.ts
 import { useState, useEffect } from "react";
-import { fetchMetPageSlim } from "../services/metSlim";
 import type { CombinedArtwork, MetFilters } from "../types/artwork";
+import { fetchHarvardPage } from "../services/harvardArtMuseumApi";
 
-const ARTWORKS_PER_PAGE = 5;
+const PAGE_SIZE = 5;
 
-export function useMetArtworks(
+export function useHarvardArtworks(
   searchTerm: string,
   filters: MetFilters,
   page: number,
@@ -18,22 +17,18 @@ export function useMetArtworks(
 
   useEffect(() => {
     setLoading(true);
-    fetchMetPageSlim(page, ARTWORKS_PER_PAGE, searchTerm, filters)
+    fetchHarvardPage(page, PAGE_SIZE, searchTerm, filters, sort)
       .then(({ artworks, total }) => {
-        // optional: sort by dateEndDate if you like
-        const sorted = artworks.sort((a, b) => {
-          const aDate = a.metSlim!.objectEndDate ?? 0;
-          const bDate = b.metSlim!.objectEndDate ?? 0;
-          return sort === "dateAsc" ? aDate - bDate : bDate - aDate;
-        });
-        setArtworks(sorted);
+        console.log("🔍 Harvard hook result:", { artworks, total });
+        setArtworks(artworks);
         setTotal(total);
+        setError(null);
       })
       .catch((err) => {
-        console.error(err);
-        setError(err);
+        console.error("Harvard hook error:", err);
         setArtworks([]);
         setTotal(0);
+        setError(err);
       })
       .finally(() => setLoading(false));
   }, [searchTerm, filters, page, sort]);

@@ -1,58 +1,103 @@
-const HARVARD_BASE_URL = "https://api.harvardartmuseums.org";
+// services/harvardArtMuseumApi.ts
 
+import type {
+  MetFilters,
+  CombinedArtwork,
+  HarvardArtworksResponse,
+  HarvardArtwork,
+} from "../types/artwork";
+
+const HARVARD_BASE_URL = "https://api.harvardartmuseums.org";
 const HARVARD_API_KEY = import.meta.env.VITE_HARVARD_API_KEY;
 
-export async function fetchHarvardArtworks(
-  page: number = 1,
-  pageSize: number = 10,
-  sortOrder: "date" | "random" = "date",
-  keyword?: string
-) {
-  try {
-    let url =
-      `${HARVARD_BASE_URL}/object?apikey=${HARVARD_API_KEY}` + `&page=${page}&size=${pageSize}`;
-
-    if (sortOrder === "random") {
-      url += `&sort=random`;
-    }
-
-    if (keyword) {
-      url += `&keyword=${encodeURIComponent(keyword)}`;
-    }
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`Harvard API Error: ${response.status} - ${response.statusText}`);
-      throw new Error(`Failed to fetch Harvard artworks: ${response.status}`);
-    }
-
-    const data = response.json();
-    console.log(`Harvard API response (Artwork List):`, data);
-    return data;
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error("Error fetching Harvard artworks:", error.message);
-      throw error;
-    } else {
-      console.error("An unexpected error occurred while fetching Harvard artworks:", error);
-      throw new Error(`An unexpected error occurred`);
-    }
+export async function fetchHarvardPage(
+  page: number,
+  pageSize: number,
+  searchTerm: string,
+  filters: MetFilters,
+  sort: "dateAsc" | "dateDesc"
+): Promise<{ artworks: CombinedArtwork[]; total: number }> {
+  if (!HARVARD_API_KEY) {
+    console.error("❌ Missing Harvard API key (VITE_HARVARD_API_KEY)");
+    return { artworks: [], total: 0 };
   }
-}
 
-export async function fetchHarvardArtworkById(id: number) {
+  // Build query parameters, converting our 0-based page to Harvard's 1-based API
+  const params = new URLSearchParams({
+    apikey: HARVARD_API_KEY,
+    page: String(page + 1),
+    size: String(pageSize),
+    hasimage: "1",
+    ...(searchTerm && { q: searchTerm }),
+    ...(filters.medium && { classification: filters.medium }),
+    ...(filters.dateBegin && { datebegin: String(filters.dateBegin) }),
+    ...(filters.dateEnd && { dateend: String(filters.dateEnd) }),
+    // sort on the numeric `datebegin` field to avoid ES errors
+    sort: sort === "dateAsc" ? "datebegin" : "-datebegin",
+  });
+
+  // Include only the fields we need (plus images for thumbnails)
+  params.set(
+    "fields",
+    [
+      "objectnumber",
+      "title",
+      "dated",
+      "datebegin",
+      "dateend",
+      "people",
+      "primaryimageurl",
+      "images",
+    ].join(",")
+  );
+
+  const url = `${HARVARD_BASE_URL}/object?${params.toString()}`;
+  console.log("🔗 Harvard fetch URL:", url);
+
+  const res = await fetch(url);
+  const text = await res.text();
+
+  // Parse JSON safely
+  let data: HarvardArtworksResponse;
   try {
-    const url = `${HARVARD_BASE_URL}/object/${id}?apikey=${HARVARD_API_KEY}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.error(`Harvard API Error (ID: ${id}): ${response.status} - ${response.statusText}`);
-      throw new Error(`Failed to fetch Harvard artwork with ID ${id}: ${response.status}`);
-    }
-    const data = await response.json();
-    console.log(`Harvard API Response (ID: ${id}):`, data);
-    return data;
-  } catch (error: any) {
-    console.error(`Error fetching Harvard artwork with ID ${id}:`, error.message);
-    throw error;
+    data = JSON.parse(text) as HarvardArtworksResponse;
+  } catch {
+    console.warn("❌ Could not parse Harvard response as JSON:", text);
+    return { artworks: [], total: 0 };
   }
+
+  // Handle HTTP errors
+  if (!res.ok) {
+    console.warn("❌ Harvard API error", res.status, data);
+    return { artworks: [], total: 0 };
+  }
+
+  const records: HarvardArtwork[] = data.records ?? [];
+  const total = data.info?.totalrecords ?? 0;
+
+  // Map to our shared CombinedArtwork shape, choosing a thumbnail URL
+  const artworks: CombinedArtwork[] = records.map((r) => {
+    const thumb = r.primaryimageurl || r.images?.[0]?.baseimageurl || null;
+
+    return {
+      id: r.objectnumber,
+      title: r.title,
+      artistDisplayName: r.people?.map((p) => p.name).join(", ") || null,
+      primaryImageSmall: thumb,
+      source: "harvard",
+      harvardSlim: {
+        id: r.id,
+        objectnumber: r.objectnumber,
+        title: r.title,
+        dated: r.dated,
+        datebegin: r.datebegin,
+        dateend: r.dateend,
+        people: r.people,
+        primaryimageurl: r.primaryimageurl,
+      },
+      harvardData: r,
+    };
+  });
+
+  return { artworks, total };
 }

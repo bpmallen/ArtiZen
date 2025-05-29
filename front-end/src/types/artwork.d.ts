@@ -180,14 +180,35 @@ export interface MetArtwork {
   GalleryNumber: string | null;
 }
 
-export interface CombinedArtwork {
-  id: string | number;
+export interface MetSlim {
+  objectID: number;
   title: string | null;
   artistDisplayName: string | null;
   primaryImageSmall: string | null;
-  source: "harvard" | "met";
-  harvardData?: HarvardArtwork;
+  objectEndDate: number | null;
+}
+
+export interface HarvardSlim {
+  id: number;
+  objectnumber: string;
+  title: string | null; // your UI uses this
+  dated: string | null; // e.g. "1867"
+  datebegin: number | null; // numeric begin
+  dateend: number | null; // numeric end
+  people: { name: string }[]; // now _always_ an array
+  primaryimageurl: string | null;
+}
+
+export interface CombinedArtwork {
+  id: number | string;
+  title: string | null;
+  artistDisplayName: string | null;
+  primaryImageSmall: string | null;
+  source: "met" | "harvard";
+  metSlim?: MetSlim;
+  harvardSlim?: HarvardSlim;
   metData?: MetArtwork;
+  harvardData?: HarvardArtwork;
 }
 export interface MetFilters {
   title?: boolean;
