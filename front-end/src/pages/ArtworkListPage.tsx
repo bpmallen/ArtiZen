@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { MetFilters } from "../types/artwork";
+import type { MetFilters, HarvardFilters } from "../types/artwork";
 import { useMetDepartments } from "../hooks/useMetDepartments";
 import { useMetArtworks } from "../hooks/useMetArtworks";
 import { useHarvardArtworks } from "../hooks/useHarvardArtworks";
@@ -26,7 +26,7 @@ function ArtworkListPage() {
   // ——— Harvard state/hooks ———
   // We'll reuse MetFilters for dateBegin/dateEnd/medium
   const [harvPage, setHarvPage] = useState(0);
-  const [harvFilters, setHarvFilters] = useState<MetFilters>({});
+  const [harvFilters, setHarvFilters] = useState<HarvardFilters>({});
   const [harvSort, setHarvSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
   const [harvInputValue, setHarvInputValue] = useState("");
   const [harvSearchTerm, setHarvSearchTerm] = useState("");
@@ -192,20 +192,20 @@ function ArtworkListPage() {
 
       {/* Harvard Filters */}
       {filter === "harvard" && (
-        <div className="mt-4 border p-4">
-          <strong>Harvard Filters</strong>
+        <div className="border p-4 rounded mb-6">
+          <h2 className="font-semibold mb-2">Harvard Filters</h2>
 
-          {/* Search */}
-          <div className="mt-2 flex gap-2">
+          {/* Main Search */}
+          <div className="flex gap-2 mb-4">
             <input
               type="text"
-              className="border rounded px-3 py-1 flex-grow"
+              className="flex-grow border rounded-l px-3 py-1"
               placeholder="Search Harvard…"
               value={harvInputValue}
               onChange={(e) => setHarvInputValue(e.target.value)}
             />
             <button
-              className="px-4 py-1 bg-blue-600 text-white rounded"
+              className="bg-blue-600 text-white px-4 rounded-r"
               onClick={() => {
                 setHarvSearchTerm(harvInputValue.trim());
                 setHarvPage(0);
@@ -215,100 +215,30 @@ function ArtworkListPage() {
             </button>
           </div>
 
-          {/* Medium → classification */}
-          <label className="block mt-2">
-            Classification:
+          {/* Keyword Filter */}
+          <label className="block mb-4">
+            <span className="block mb-1">Keyword:</span>
             <input
               type="text"
-              className="ml-2 border rounded px-2"
-              placeholder="e.g. Prints"
+              className="w-full border rounded px-3 py-1"
+              placeholder="Titles, artists, descriptions…"
+              value={harvFilters.keyword ?? ""}
               onChange={(e) =>
-                setHarvFilters((f) => ({ ...f, medium: e.target.value || undefined }))
+                setHarvFilters((f) => ({ ...f, keyword: e.target.value || undefined }))
               }
             />
           </label>
 
-          {/* Date range */}
-          <div className="mt-2 flex gap-4">
-            <label>
-              Date Begin:
-              <input
-                type="number"
-                className="ml-2 border rounded px-2"
-                onChange={(e) =>
-                  setHarvFilters((f) => ({
-                    ...f,
-                    dateBegin: +e.target.value || undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              Date End:
-              <input
-                type="number"
-                className="ml-2 border rounded px-2"
-                onChange={(e) =>
-                  setHarvFilters((f) => ({
-                    ...f,
-                    dateEnd: +e.target.value || undefined,
-                  }))
-                }
-              />
-            </label>
-          </div>
-          {/* Century */}
-          <label className="block mt-2">
-            Century:
-            <input
-              type="text"
-              className="ml-2 border rounded px-2"
-              placeholder="e.g. 17th century"
-              onChange={(e) => {
-                setHarvFilters((f) => ({ ...f, century: e.target.value || undefined }));
-                setHarvPage(0);
-              }}
-            />
-          </label>
-
-          {/* Culture */}
-          <label className="block mt-2">
-            Culture:
-            <input
-              type="text"
-              className="ml-2 border rounded px-2"
-              placeholder="e.g. Greek"
-              onChange={(e) => {
-                setHarvFilters((f) => ({ ...f, culture: e.target.value || undefined }));
-                setHarvPage(0);
-              }}
-            />
-          </label>
-
-          {/* Keyword */}
-          <label className="block mt-2">
-            Keyword:
-            <input
-              type="text"
-              className="ml-2 border rounded px-2"
-              placeholder="Search titles, artists, etc."
-              onChange={(e) => {
-                setHarvFilters((f) => ({ ...f, keyword: e.target.value || undefined }));
-                setHarvPage(0);
-              }}
-            />
-          </label>
-
-          {/* Sort */}
-          <label className="block mt-2">
-            Sort by date:
+          {/* Sort by Date */}
+          <label className="block">
+            <span className="block mb-1">Sort by date:</span>
             <select
-              className="ml-2 border rounded px-2"
+              className="w-full border rounded px-2 py-1"
               value={harvSort}
               onChange={(e) => setHarvSort(e.target.value as any)}
             >
-              <option value="dateAsc">Date ↑</option>
-              <option value="dateDesc">Date ↓</option>
+              <option value="dateAsc">Oldest ↑</option>
+              <option value="dateDesc">Newest ↓</option>
             </select>
           </label>
         </div>
