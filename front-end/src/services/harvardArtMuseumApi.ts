@@ -12,11 +12,10 @@ export async function fetchHarvardPage(
   page: number,
   pageSize: number,
   searchTerm: string,
-  filters: HarvardFilters,
-  sort: "dateAsc" | "dateDesc"
+  filters: HarvardFilters
 ): Promise<{ artworks: CombinedArtwork[]; total: number }> {
   if (!HARVARD_API_KEY) {
-    console.error("❌ Missing Harvard API key (VITE_HARVARD_API_KEY)");
+    console.error("Missing Harvard API key (VITE_HARVARD_API_KEY)");
     return { artworks: [], total: 0 };
   }
 
@@ -29,7 +28,6 @@ export async function fetchHarvardPage(
     ...(searchTerm && { q: searchTerm }),
     ...(filters.dateBegin && { datebegin: String(filters.dateBegin) }),
     ...(filters.dateEnd && { dateend: String(filters.dateEnd) }),
-    sort: sort === "dateAsc" ? "datebegin" : "-datebegin",
   });
 
   if (searchTerm) params.set("q", searchTerm);
@@ -66,13 +64,13 @@ export async function fetchHarvardPage(
   try {
     data = JSON.parse(text) as HarvardArtworksResponse;
   } catch {
-    console.warn("❌ Could not parse Harvard response as JSON:", text);
+    console.warn("Could not parse Harvard response as JSON:", text);
     return { artworks: [], total: 0 };
   }
 
   // Handle HTTP errors
   if (!res.ok) {
-    console.warn("❌ Harvard API error", res.status, data);
+    console.warn("Harvard API error", res.status, data);
     return { artworks: [], total: 0 };
   }
 
