@@ -35,6 +35,25 @@ export default function ArtworkListPage() {
     error: harvError,
   } = useHarvardArtworks(harvSearch, harvFilters, harvPage, harvSort);
 
+  // client-side filter + sort of those 5 MET results
+  const metToDisplay = useMemo<CombinedArtwork[]>(() => {
+    return metArtworks
+      .filter((a) => {
+        const db = metFilters.dateBegin;
+        const de = metFilters.dateEnd;
+        // grab the year off of the metSlim
+        const year = a.metSlim?.objectEndDate ?? 0;
+        if (db != null && year < db) return false;
+        if (de != null && year > de) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const ay = a.metSlim?.objectEndDate ?? 0;
+        const by = b.metSlim?.objectEndDate ?? 0;
+        return metSort === "dateAsc" ? ay - by : by - ay;
+      });
+  }, [metArtworks, metFilters.dateBegin, metFilters.dateEnd, metSort]);
+
   // client-side sort of those five
   const harvToDisplay = useMemo<CombinedArtwork[]>(() => {
     return [...rawHarv].sort((a, b) => {
@@ -46,7 +65,7 @@ export default function ArtworkListPage() {
 
   // — Tabs
   const [tab, setTab] = useState<"met" | "harvard">("met");
-  const artworks = tab === "harvard" ? harvToDisplay : metArtworks;
+  const artworks = tab === "harvard" ? harvToDisplay : metToDisplay;
   const total = tab === "harvard" ? totalHarv : totalMet;
   const loading = tab === "harvard" ? harvLoading : metLoading;
   const error = tab === "harvard" ? harvError : metError;
@@ -242,6 +261,16 @@ export default function ArtworkListPage() {
           <div>
             <strong>{art.title}</strong>{" "}
             <span className="text-sm text-gray-500">{art.source.toUpperCase()}</span>
+            {/* --- new date line: --- */}
+            <div className="text-sm text-gray-600">
+              {art.source === "met"
+                ? // MET only has objectEndDate on the slim:
+                  art.metSlim?.objectEndDate != null
+                  ? String(art.metSlim.objectEndDate)
+                  : "n.d."
+                : // Harvard uses the `dated` string:
+                  art.harvardSlim?.dated || "n.d."}
+            </div>
           </div>
         </div>
       ))}
