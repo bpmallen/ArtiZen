@@ -1,4 +1,5 @@
 // src/pages/ArtworkListPage.tsx
+
 import { useState, useCallback, useMemo } from "react";
 import type { MetFilters, HarvardFilters, CombinedArtwork } from "../types/artwork";
 import { useMetDepartments } from "../hooks/useMetDepartments";
@@ -20,9 +21,8 @@ export default function ArtworkListPage() {
   const [metInput, setMetInput] = useState("");
   const [metSearch, setMetSearch] = useState("");
 
-  // When in “ALL,” MET’s “page” is driven by allPage; otherwise, by metPage
+  // When in “ALL,” MET’s page is driven by allPage; otherwise by metPage
   const metHookPage = tab === "all" ? allPage : metPage;
-
   const {
     artworks: metArtworks,
     total: totalMet,
@@ -39,9 +39,8 @@ export default function ArtworkListPage() {
   const [harvInput, setHarvInput] = useState("");
   const [harvSearch, setHarvSearch] = useState("");
 
-  // When in “ALL,” Harvard’s page is driven by allPage; otherwise, by harvPage
+  // When in “ALL,” Harvard’s page is driven by allPage; otherwise by harvPage
   const harvHookPage = tab === "all" ? allPage : harvPage;
-
   const {
     artworks: rawHarv,
     total: totalHarv,
@@ -49,7 +48,7 @@ export default function ArtworkListPage() {
     error: harvError,
   } = useHarvardArtworks(harvSearch, harvFilters, harvHookPage, harvSort);
 
-  // ─── Client‐side filter + sort for MET page of 5───
+  // ─── Client‐side filter + sort for MET page of 5 ───
   const metToDisplay = useMemo<CombinedArtwork[]>(() => {
     return metArtworks
       .filter((a) => {
@@ -76,37 +75,31 @@ export default function ArtworkListPage() {
     });
   }, [rawHarv, harvSort]);
 
-  // ─── Additional state: “ALL” sort-by-date ───
+  // ─── Additional state: “ALL” sort‐by‐date ───
   const [allSort, setAllSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
 
-  // ─── Combine for “ALL” (5 MET + 5 Harvard) and then sort by allSort ───
+  // ─── Combine for “ALL” (5 MET + 5 Harvard) and then client‐sort by allSort ───
   const combinedToDisplay = useMemo<CombinedArtwork[]>(() => {
-    // First: merge the two arrays (each is already filtered+sorted client‐side)
     const merged = [...metToDisplay, ...harvToDisplay];
-
-    // Then: apply “ALL” sort by dateend (MET uses objectEndDate, Harvard uses dateend)
     return merged.sort((a, b) => {
       const aDate =
         a.source === "met" ? a.metSlim?.objectEndDate ?? 0 : a.harvardSlim?.dateend ?? 0;
       const bDate =
         b.source === "met" ? b.metSlim?.objectEndDate ?? 0 : b.harvardSlim?.dateend ?? 0;
-
       return allSort === "dateAsc" ? aDate - bDate : bDate - aDate;
     });
   }, [metToDisplay, harvToDisplay, allSort]);
 
-  // ─── Pick which array and which total depends on tab ───
+  // ─── Which array to render based on tab ───
   const artworks = useMemo<CombinedArtwork[]>(() => {
     if (tab === "met") return metToDisplay;
     if (tab === "harvard") return harvToDisplay;
-    // tab === "all"
     return combinedToDisplay;
   }, [tab, metToDisplay, harvToDisplay, combinedToDisplay]);
 
   const totalPages = useMemo(() => {
     if (tab === "met") return Math.ceil(totalMet / PER_API_PAGE);
     if (tab === "harvard") return Math.ceil(totalHarv / PER_API_PAGE);
-    // “ALL” uses the maximum of the two API page counts
     return Math.max(Math.ceil(totalMet / PER_API_PAGE), Math.ceil(totalHarv / PER_API_PAGE));
   }, [tab, totalMet, totalHarv]);
 
@@ -121,7 +114,7 @@ export default function ArtworkListPage() {
     [tab]
   );
 
-  // ─── Combined loading / error flags ───
+  // ─── Combined loading / error ───
   const loading = metLoading || harvLoading;
   const error = metError || harvError;
 
@@ -375,18 +368,15 @@ export default function ArtworkListPage() {
         >
           Prev
         </button>
-
         {(() => {
           const pagesToShow = 5;
           const half = Math.floor(pagesToShow / 2);
           let start = Math.max(0, page - half);
           let end = start + pagesToShow;
-
           if (end > totalPages) {
             end = totalPages;
             start = Math.max(0, end - pagesToShow);
           }
-
           return Array.from({ length: end - start }, (_, i) => start + i).map((pIndex) => (
             <button
               key={pIndex}
@@ -404,7 +394,6 @@ export default function ArtworkListPage() {
             </button>
           ));
         })()}
-
         {/* Next */}
         <button
           onClick={handleNext}

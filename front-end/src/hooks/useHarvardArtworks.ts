@@ -17,7 +17,7 @@ export function useHarvardArtworks(
 
   useEffect(() => {
     setLoading(true);
-    fetchHarvardPage(page, PAGE_SIZE, searchTerm, filters)
+    fetchHarvardPage(page, PAGE_SIZE, searchTerm, filters, sort)
       .then(({ artworks, total }) => {
         console.log("🔍 Harvard hook result:", { artworks, total });
         setArtworks(artworks);
