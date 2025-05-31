@@ -6,42 +6,55 @@ import { useMetArtworks } from "../hooks/useMetArtworks";
 import { useHarvardArtworks } from "../hooks/useHarvardArtworks";
 
 export default function ArtworkListPage() {
-  const FETCH_IDS_PER_PAGE = 50;
-  // — Met state
+  const PER_API_PAGE = 5; // each API call fetches 5 items
+
+  // ─── Tabs & “ALL” page state must come first ───
+  type TabType = "met" | "harvard" | "all";
+  const [tab, setTab] = useState<TabType>("met");
+  const [allPage, setAllPage] = useState(0);
+
+  // ─── MET state/hooks ───
   const [metPage, setMetPage] = useState(0);
   const [metFilters, setMetFilters] = useState<MetFilters>({});
   const [metSort, setMetSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
   const [metInput, setMetInput] = useState("");
   const [metSearch, setMetSearch] = useState("");
+
+  // When in “ALL” tab, drive MET page by allPage; otherwise use metPage
+  const metHookPage = tab === "all" ? allPage : metPage;
+
   const {
     artworks: metArtworks,
     total: totalMet,
     loading: metLoading,
     error: metError,
-  } = useMetArtworks(metSearch, metFilters, metPage, metSort);
+  } = useMetArtworks(metSearch, metFilters, metHookPage, metSort);
+
   const { departments } = useMetDepartments();
 
-  // — Harvard state
+  // ─── Harvard state/hooks ───
   const [harvPage, setHarvPage] = useState(0);
   const [harvFilters, setHarvFilters] = useState<HarvardFilters>({});
   const [harvSort, setHarvSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
   const [harvInput, setHarvInput] = useState("");
   const [harvSearch, setHarvSearch] = useState("");
-  // note: no `sort` arg here
+
+  // When in “ALL” tab, drive Harvard page by allPage; otherwise use harvPage
+  const harvHookPage = tab === "all" ? allPage : harvPage;
+
   const {
     artworks: rawHarv,
     total: totalHarv,
     loading: harvLoading,
     error: harvError,
-  } = useHarvardArtworks(harvSearch, harvFilters, harvPage, harvSort);
+  } = useHarvardArtworks(harvSearch, harvFilters, harvHookPage, harvSort);
 
-  // client-side filter + sort of those 5 MET results
+  // ─── Client‐side filter + sort for those 5 MET results ───
   const metToDisplay = useMemo<CombinedArtwork[]>(() => {
     return metArtworks
       .filter((a) => {
         const db = metFilters.dateBegin;
         const de = metFilters.dateEnd;
-        // grab the year off of the metSlim
         const year = a.metSlim?.objectEndDate ?? 0;
         if (db != null && year < db) return false;
         if (de != null && year > de) return false;
@@ -54,7 +67,7 @@ export default function ArtworkListPage() {
       });
   }, [metArtworks, metFilters.dateBegin, metFilters.dateEnd, metSort]);
 
-  // client-side sort of those five
+  // ─── Client‐side sort for those 5 Harvard results ───
   const harvToDisplay = useMemo<CombinedArtwork[]>(() => {
     return [...rawHarv].sort((a, b) => {
       const ea = a.harvardSlim?.dateend ?? 0;
@@ -63,32 +76,57 @@ export default function ArtworkListPage() {
     });
   }, [rawHarv, harvSort]);
 
-  // — Tabs
-  const [tab, setTab] = useState<"met" | "harvard">("met");
-  const artworks = tab === "harvard" ? harvToDisplay : metToDisplay;
-  const total = tab === "harvard" ? totalHarv : totalMet;
-  const loading = tab === "harvard" ? harvLoading : metLoading;
-  const error = tab === "harvard" ? harvError : metError;
-  const page = tab === "harvard" ? harvPage : metPage;
-  const setPage = tab === "harvard" ? setHarvPage : setMetPage;
+  // ─── Combine depending on tab ───
+  const artworks = useMemo<CombinedArtwork[]>(() => {
+    if (tab === "met") return metToDisplay;
+    if (tab === "harvard") return harvToDisplay;
+    // tab === "all": show 5 MET + 5 Harvard
+    return [...metToDisplay, ...harvToDisplay];
+  }, [tab, metToDisplay, harvToDisplay]);
 
-  const totalPages = Math.ceil(total / FETCH_IDS_PER_PAGE);
-  const handlePrev = useCallback(() => setPage((p) => Math.max(0, p - 1)), [setPage]);
-  const handleNext = useCallback(() => setPage((p) => p + 1), [setPage]);
+  // ─── Compute totalPages (in terms of API pages of size 5) ───
+  const totalPages = useMemo(() => {
+    if (tab === "met") return Math.ceil(totalMet / PER_API_PAGE);
+    if (tab === "harvard") return Math.ceil(totalHarv / PER_API_PAGE);
+    // “ALL” uses the larger of (MET pages, Harvard pages)
+    return Math.max(Math.ceil(totalMet / PER_API_PAGE), Math.ceil(totalHarv / PER_API_PAGE));
+  }, [tab, totalMet, totalHarv]);
+
+  // ─── Which page index & setter ───
+  const page = tab === "met" ? metPage : tab === "harvard" ? harvPage : allPage;
+  const setPage = useCallback(
+    (p: number) => {
+      if (tab === "met") setMetPage(p);
+      else if (tab === "harvard") setHarvPage(p);
+      else setAllPage(p);
+    },
+    [tab]
+  );
+
+  // ─── Aggregate loading/error ───
+  const loading = metLoading || harvLoading;
+  const error = metError || harvError;
+
+  const handlePrev = () => setPage(Math.max(0, page - 1));
+  const handleNext = () => setPage(Math.min(totalPages - 1, page + 1));
+
+  // ─── “ALL” search input ───
+  const [allInput, setAllInput] = useState("");
 
   return (
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-4xl font-bold mb-4">Exhibition Curation Platform</h1>
 
-      {/* Tabs */}
+      {/* ─── Tabs ─── */}
       <div className="flex gap-4 mb-6">
-        {(["met", "harvard"] as const).map((t) => (
+        {(["met", "harvard", "all"] as TabType[]).map((t) => (
           <button
             key={t}
             onClick={() => {
               setTab(t);
               setMetPage(0);
               setHarvPage(0);
+              setAllPage(0);
             }}
             className={t === tab ? "font-bold text-blue-600" : "text-gray-600"}
           >
@@ -97,14 +135,14 @@ export default function ArtworkListPage() {
         ))}
       </div>
 
-      {/* Met Filters */}
+      {/* ─── MET Filters (tab === "met") ─── */}
       {tab === "met" && (
         <div className="border p-4 rounded mb-6">
           <h2 className="font-semibold mb-2">MET Filters</h2>
           <div className="flex gap-2 mb-2">
             <input
               className="flex-grow border rounded-l px-3 py-1"
-              placeholder="Search Met…"
+              placeholder="Search MET…"
               value={metInput}
               onChange={(e) => setMetInput(e.target.value)}
             />
@@ -197,7 +235,7 @@ export default function ArtworkListPage() {
         </div>
       )}
 
-      {/* Harvard Filters */}
+      {/* ─── Harvard Filters (tab === "harvard") ─── */}
       {tab === "harvard" && (
         <div className="border p-4 rounded mb-6">
           <h2 className="font-semibold mb-2">Harvard Filters</h2>
@@ -243,12 +281,38 @@ export default function ArtworkListPage() {
         </div>
       )}
 
-      {/* Loading / Error / Empty */}
+      {/* ─── ALL Filters (tab === "all") ─── */}
+      {tab === "all" && (
+        <div className="border p-4 rounded mb-6">
+          <h2 className="font-semibold mb-2">Search Both MET + Harvard</h2>
+          <div className="flex gap-2 mb-4">
+            <input
+              className="flex-grow border rounded-l px-3 py-1"
+              placeholder="Search both…"
+              value={allInput}
+              onChange={(e) => setAllInput(e.target.value)}
+            />
+            <button
+              className="bg-blue-600 text-white px-4 rounded-r"
+              onClick={() => {
+                setMetSearch(allInput.trim());
+                setHarvSearch(allInput.trim());
+                setAllPage(0);
+              }}
+            >
+              Search
+            </button>
+          </div>
+          <p className="text-sm text-gray-500">(Displays 5 from MET + 5 from Harvard each page)</p>
+        </div>
+      )}
+
+      {/* ─── Loading / Error / Empty ─── */}
       {loading && <p>Loading…</p>}
       {error && <p className="text-red-600">Error: {error.message}</p>}
-      {!loading && total === 0 && <p>No artworks found.</p>}
+      {!loading && artworks.length === 0 && <p>No artworks found.</p>}
 
-      {/* Results */}
+      {/* ─── Results ─── */}
       {artworks.map((art) => (
         <div key={art.id} className="flex items-center gap-4 mb-4">
           {art.primaryImageSmall && (
@@ -261,21 +325,16 @@ export default function ArtworkListPage() {
           <div>
             <strong>{art.title}</strong>{" "}
             <span className="text-sm text-gray-500">{art.source.toUpperCase()}</span>
-            {/* --- new date line: --- */}
             <div className="text-sm text-gray-600">
               {art.source === "met"
-                ? // MET only has objectEndDate on the slim:
-                  art.metSlim?.objectEndDate != null
-                  ? String(art.metSlim.objectEndDate)
-                  : "n.d."
-                : // Harvard uses the `dated` string:
-                  art.harvardSlim?.dated || "n.d."}
+                ? art.metSlim?.objectEndDate ?? "n.d."
+                : art.harvardSlim?.dated ?? "n.d."}
             </div>
           </div>
         </div>
       ))}
 
-      {/* Pagination */}
+      {/* ─── Pagination (5 buttons at a time) ─── */}
       <div className="mt-6 flex justify-center items-center flex-wrap gap-2">
         {/* Prev */}
         <button
@@ -286,7 +345,6 @@ export default function ArtworkListPage() {
           Prev
         </button>
 
-        {/* Numeric page buttons (5 at a time) */}
         {(() => {
           const pagesToShow = 5;
           const half = Math.floor(pagesToShow / 2);
@@ -298,20 +356,20 @@ export default function ArtworkListPage() {
             start = Math.max(0, end - pagesToShow);
           }
 
-          return Array.from({ length: end - start }, (_, i) => start + i).map((p) => (
+          return Array.from({ length: end - start }, (_, i) => start + i).map((pIndex) => (
             <button
-              key={p}
-              onClick={() => setPage(p)}
+              key={pIndex}
+              onClick={() => setPage(pIndex)}
               className={`
-          px-3 py-1 rounded border
-          ${
-            p === page
-              ? "text-black font-bold underline underline-offset-4 decoration-2 decoration-blue-600"
-              : "bg-white text-gray-700 hover:bg-gray-100"
-          }
-        `}
+                px-3 py-1 rounded border
+                ${
+                  pIndex === page
+                    ? "text-black font-bold underline decoration-2 decoration-blue-600"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
+                }
+              `}
             >
-              {p + 1}
+              {pIndex + 1}
             </button>
           ));
         })()}
@@ -319,7 +377,7 @@ export default function ArtworkListPage() {
         {/* Next */}
         <button
           onClick={handleNext}
-          disabled={(page + 1) * FETCH_IDS_PER_PAGE >= total}
+          disabled={page + 1 >= totalPages}
           className="px-3 py-1 rounded border bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50"
         >
           Next
