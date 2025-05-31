@@ -8,7 +8,7 @@ import { useHarvardArtworks } from "../hooks/useHarvardArtworks";
 export default function ArtworkListPage() {
   const PER_API_PAGE = 5; // each API call fetches 5 items
 
-  // ─── Tabs & “ALL” page state must come first ───
+  // ─── Tabs & “ALL” page state ───
   type TabType = "met" | "harvard" | "all";
   const [tab, setTab] = useState<TabType>("met");
   const [allPage, setAllPage] = useState(0);
@@ -20,7 +20,7 @@ export default function ArtworkListPage() {
   const [metInput, setMetInput] = useState("");
   const [metSearch, setMetSearch] = useState("");
 
-  // When in “ALL” tab, drive MET page by allPage; otherwise use metPage
+  // When in “ALL,” MET’s “page” is driven by allPage; otherwise, by metPage
   const metHookPage = tab === "all" ? allPage : metPage;
 
   const {
@@ -39,7 +39,7 @@ export default function ArtworkListPage() {
   const [harvInput, setHarvInput] = useState("");
   const [harvSearch, setHarvSearch] = useState("");
 
-  // When in “ALL” tab, drive Harvard page by allPage; otherwise use harvPage
+  // When in “ALL,” Harvard’s page is driven by allPage; otherwise, by harvPage
   const harvHookPage = tab === "all" ? allPage : harvPage;
 
   const {
@@ -49,7 +49,7 @@ export default function ArtworkListPage() {
     error: harvError,
   } = useHarvardArtworks(harvSearch, harvFilters, harvHookPage, harvSort);
 
-  // ─── Client‐side filter + sort for those 5 MET results ───
+  // ─── Client‐side filter + sort for MET page of 5───
   const metToDisplay = useMemo<CombinedArtwork[]>(() => {
     return metArtworks
       .filter((a) => {
@@ -67,7 +67,7 @@ export default function ArtworkListPage() {
       });
   }, [metArtworks, metFilters.dateBegin, metFilters.dateEnd, metSort]);
 
-  // ─── Client‐side sort for those 5 Harvard results ───
+  // ─── Client‐side sort for Harvard page of 5 ───
   const harvToDisplay = useMemo<CombinedArtwork[]>(() => {
     return [...rawHarv].sort((a, b) => {
       const ea = a.harvardSlim?.dateend ?? 0;
@@ -76,23 +76,41 @@ export default function ArtworkListPage() {
     });
   }, [rawHarv, harvSort]);
 
-  // ─── Combine depending on tab ───
+  // ─── Additional state: “ALL” sort-by-date ───
+  const [allSort, setAllSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
+
+  // ─── Combine for “ALL” (5 MET + 5 Harvard) and then sort by allSort ───
+  const combinedToDisplay = useMemo<CombinedArtwork[]>(() => {
+    // First: merge the two arrays (each is already filtered+sorted client‐side)
+    const merged = [...metToDisplay, ...harvToDisplay];
+
+    // Then: apply “ALL” sort by dateend (MET uses objectEndDate, Harvard uses dateend)
+    return merged.sort((a, b) => {
+      const aDate =
+        a.source === "met" ? a.metSlim?.objectEndDate ?? 0 : a.harvardSlim?.dateend ?? 0;
+      const bDate =
+        b.source === "met" ? b.metSlim?.objectEndDate ?? 0 : b.harvardSlim?.dateend ?? 0;
+
+      return allSort === "dateAsc" ? aDate - bDate : bDate - aDate;
+    });
+  }, [metToDisplay, harvToDisplay, allSort]);
+
+  // ─── Pick which array and which total depends on tab ───
   const artworks = useMemo<CombinedArtwork[]>(() => {
     if (tab === "met") return metToDisplay;
     if (tab === "harvard") return harvToDisplay;
-    // tab === "all": show 5 MET + 5 Harvard
-    return [...metToDisplay, ...harvToDisplay];
-  }, [tab, metToDisplay, harvToDisplay]);
+    // tab === "all"
+    return combinedToDisplay;
+  }, [tab, metToDisplay, harvToDisplay, combinedToDisplay]);
 
-  // ─── Compute totalPages (in terms of API pages of size 5) ───
   const totalPages = useMemo(() => {
     if (tab === "met") return Math.ceil(totalMet / PER_API_PAGE);
     if (tab === "harvard") return Math.ceil(totalHarv / PER_API_PAGE);
-    // “ALL” uses the larger of (MET pages, Harvard pages)
+    // “ALL” uses the maximum of the two API page counts
     return Math.max(Math.ceil(totalMet / PER_API_PAGE), Math.ceil(totalHarv / PER_API_PAGE));
   }, [tab, totalMet, totalHarv]);
 
-  // ─── Which page index & setter ───
+  // ─── Which page & setter to use ───
   const page = tab === "met" ? metPage : tab === "harvard" ? harvPage : allPage;
   const setPage = useCallback(
     (p: number) => {
@@ -103,7 +121,7 @@ export default function ArtworkListPage() {
     [tab]
   );
 
-  // ─── Aggregate loading/error ───
+  // ─── Combined loading / error flags ───
   const loading = metLoading || harvLoading;
   const error = metError || harvError;
 
@@ -281,7 +299,7 @@ export default function ArtworkListPage() {
         </div>
       )}
 
-      {/* ─── ALL Filters (tab === "all") ─── */}
+      {/* ─── ALL Filters + Sort (tab === "all") ─── */}
       {tab === "all" && (
         <div className="border p-4 rounded mb-6">
           <h2 className="font-semibold mb-2">Search Both MET + Harvard</h2>
@@ -303,7 +321,20 @@ export default function ArtworkListPage() {
               Search
             </button>
           </div>
-          <p className="text-sm text-gray-500">(Displays 5 from MET + 5 from Harvard each page)</p>
+          <label className="block mb-4">
+            Sort by date:
+            <select
+              className="mt-1 w-full border rounded px-2 py-1"
+              value={allSort}
+              onChange={(e) => setAllSort(e.target.value as any)}
+            >
+              <option value="dateAsc">Oldest ↑</option>
+              <option value="dateDesc">Newest ↓</option>
+            </select>
+          </label>
+          <p className="text-sm text-gray-500">
+            (Showing 5 from MET + 5 from Harvard on each page.)
+          </p>
         </div>
       )}
 
