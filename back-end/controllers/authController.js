@@ -13,14 +13,14 @@ export const register = async (req, res, next) => {
     // check if username already exists
     const existing = await User.findOne({ username });
     if (existing) {
-      return res.stat(400).json({ message: `Username already exists.` });
+      return res.status(400).json({ message: `Username already exists.` });
     }
 
     const passwordHash = await hashPassword(password);
     const user = await User.create({
       username,
       passwordHash,
-      profileImageUrl: profileImage || "",
+      profileImageUrl: profileImageUrl || "",
       collections: [],
     });
 
@@ -86,6 +86,6 @@ export const getMe = async (req, res, next) => {
     res.status(200).json({ user });
   } catch (error) {
     console.log("Error in getMe controller: ", error.message);
-    next(err);
+    next(error);
   }
 };

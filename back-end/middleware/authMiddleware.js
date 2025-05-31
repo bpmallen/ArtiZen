@@ -1,14 +1,10 @@
 import JWT from "jsonwebtoken";
-import User from "../models/User.js";
-
-const JWT_SECRET = process.env.JWT_SECRET;
 
 export const protect = async (req, res, next) => {
   let token;
-
   const authHeader = req.headers.authorization;
 
-  if (authHeader && authHeader.startsWith(`Bearer `)) {
+  if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
   }
 
@@ -17,11 +13,18 @@ export const protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = JWT.verify(token, JWT_SECRET);
-    req.userId = decoded.is;
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error("JWT_SECRET is not defined");
+    }
+
+    const decoded = JWT.verify(token, secret);
+
+    req.userId = decoded.id;
+
     next();
   } catch (error) {
-    console.error(err);
+    console.error("JWT verification error:", error);
     return res.status(401).json({ message: "Not authorised, token failed." });
   }
 };
