@@ -98,14 +98,14 @@ export const removeItemFromCollection = async (req, res, next) => {
   try {
     if (!ensureSelf(req, res)) return;
 
-    const { colName, userId } = req.params;
+    const { colName, artworkId, userId } = req.params;
     const { source } = req.body;
 
     if (!source) {
       return res.status(400).json({ message: "source is required as query param." });
     }
 
-    const user = await User.findById(req.params.userId);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
