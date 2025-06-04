@@ -1,15 +1,19 @@
 import "./App.css";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import NavBar from "./components/Navbar";
 import ArtworkListPage from "./pages/ArtworkListPage";
+import LoginPage from "./pages/LoginPage";
 import { useAuth } from "./contexts/useAuth";
 
 function App() {
   return (
     <BrowserRouter>
       <NavBar />
-      <ArtworkListPage />
+      <Routes>
+        <Route path="/" element={<ArtworkListPage />} />
+        <Route path="login" element={<LoginPage />} />
+      </Routes>
       <Footer />
     </BrowserRouter>
   );

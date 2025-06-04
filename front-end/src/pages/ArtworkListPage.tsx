@@ -1,5 +1,3 @@
-// src/pages/ArtworkListPage.tsx
-
 import { useState, useCallback, useMemo } from "react";
 import type { MetFilters, HarvardFilters, CombinedArtwork } from "../types/artwork";
 import { useMetDepartments } from "../hooks/useMetDepartments";
