@@ -3,6 +3,7 @@ import type { MetFilters, HarvardFilters, CombinedArtwork } from "../types/artwo
 import { useMetDepartments } from "../hooks/useMetDepartments";
 import { useMetArtworks } from "../hooks/useMetArtworks";
 import { useHarvardArtworks } from "../hooks/useHarvardArtworks";
+import ArtworkCard from "../components/ArtworkCard";
 
 export default function ArtworkListPage() {
   const PER_API_PAGE = 5; // each API call fetches 5 items
@@ -235,7 +236,7 @@ export default function ArtworkListPage() {
             <select
               className="ml-2 border rounded px-2"
               value={metSort}
-              onChange={(e) => setMetSort(e.target.value as any)}
+              onChange={(e) => setMetSort(e.target.value as "dateAsc" | "dateDesc")}
             >
               <option value="dateAsc">Oldest ↑</option>
               <option value="dateDesc">Newest ↓</option>
@@ -281,7 +282,7 @@ export default function ArtworkListPage() {
             <select
               className="w-full border rounded px-2 py-1"
               value={harvSort}
-              onChange={(e) => setHarvSort(e.target.value as any)}
+              onChange={(e) => setHarvSort(e.target.value as "dateAsc" | "dateDesc")}
             >
               <option value="dateAsc">Oldest ↑</option>
               <option value="dateDesc">Newest ↓</option>
@@ -317,7 +318,7 @@ export default function ArtworkListPage() {
             <select
               className="mt-1 w-full border rounded px-2 py-1"
               value={allSort}
-              onChange={(e) => setAllSort(e.target.value as any)}
+              onChange={(e) => setAllSort(e.target.value as "dateAsc" | "dateDesc")}
             >
               <option value="dateAsc">Oldest ↑</option>
               <option value="dateDesc">Newest ↓</option>
@@ -335,26 +336,12 @@ export default function ArtworkListPage() {
       {!loading && artworks.length === 0 && <p>No artworks found.</p>}
 
       {/* ─── Results ─── */}
-      {artworks.map((art) => (
-        <div key={art.id} className="flex items-center gap-4 mb-4">
-          {art.primaryImageSmall && (
-            <img
-              src={art.primaryImageSmall}
-              alt={art.title || ""}
-              className="w-16 h-16 object-cover rounded"
-            />
-          )}
-          <div>
-            <strong>{art.title}</strong>{" "}
-            <span className="text-sm text-gray-500">{art.source.toUpperCase()}</span>
-            <div className="text-sm text-gray-600">
-              {art.source === "met"
-                ? art.metSlim?.objectEndDate ?? "n.d."
-                : art.harvardSlim?.dated ?? "n.d."}
-            </div>
-          </div>
-        </div>
-      ))}
+      <div className="p-4">
+        {/* Replace your inline loop with: */}
+        {artworks.map((art: CombinedArtwork) => (
+          <ArtworkCard key={art.id} artwork={art} />
+        ))}
+      </div>
 
       {/* ─── Pagination (5 buttons at a time) ─── */}
       <div className="mt-6 flex justify-center items-center flex-wrap gap-2">
