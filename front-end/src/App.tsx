@@ -8,6 +8,7 @@ import ArtworkListPage from "./pages/ArtworkListPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import CollectionsPage from "./pages/CollectionsPage";
+import CollectionDetailPage from "./pages/CollectionDetailPage";
 import { useAuth } from "./contexts/useAuth";
 
 interface ProtectedRouteProps {
@@ -34,7 +35,17 @@ function App() {
               <CollectionsPage />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route
+            path=":collectionName"
+            element={
+              <ProtectedRoute>
+                <CollectionDetailPage />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />
     </BrowserRouter>

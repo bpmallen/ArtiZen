@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../services/apiClient";
 import type { Collection } from "../types/collection";
 import type { AxiosResponse } from "axios";
+import { Link, Outlet } from "react-router-dom";
 
 export default function CollectionsPage() {
   const { currentUser } = useAuth();
@@ -60,10 +61,13 @@ export default function CollectionsPage() {
       ) : (
         collections.map((col: Collection) => (
           <div key={col.name} style={{ marginBottom: 10 }}>
-            <strong>{col.name}</strong> ({col.items.length} items)
+            <Link to={`/collections/${col.name}`} className="text-blue-600 hover:underline">
+              {col.name} ({col.items.length} items)
+            </Link>
           </div>
         ))
       )}
+      <Outlet />
     </div>
   );
 }
