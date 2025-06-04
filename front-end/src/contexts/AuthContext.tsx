@@ -5,9 +5,8 @@ import { AuthContext, type User } from "./AuthContextDefinition";
 export function AuthProvider({ children }: { children: ReactNode }) {
   //  token state: initialize from localStorage (if any)
   const [token, setToken] = useState<string | null>(() => {
-    const t = localStorage.getItem("token");
-    console.log("AuthContext: initial token from localStorage =", t);
-    return t;
+    const token = localStorage.getItem("token");
+    return token;
   });
 
   //  currentUser state: who is logged in
@@ -15,15 +14,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   //  Whenever `token` change, sync Axios header and fetch /auth/me
   useEffect(() => {
-    console.log("AuthContext.useEffect running; token =", token);
     if (token) {
       setAuthToken(token);
-      console.log("AuthContext: calling /auth/me with token");
 
       apiClient
         .get("/auth/me")
         .then((res) => {
-          console.log("AuthContext: /auth/me returned user =", res.data.user);
           setCurrentUser(res.data.user);
         })
         .catch((err) => {
@@ -35,7 +31,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAuthToken(null);
         });
     } else {
-      console.log("AuthContext: no token, ensuring header removed");
       setAuthToken(null);
       setCurrentUser(null);
     }
@@ -43,7 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // login(token, user): store the token & user
   const login = (newToken: string, user: User) => {
-    console.log("AuthContext.login called with token =", newToken, "user =", user);
     localStorage.setItem("token", newToken);
     setToken(newToken);
     setCurrentUser(user);
@@ -51,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // logout(): clear all auth data
   const logout = () => {
-    console.log("AuthContext.logout called");
     localStorage.removeItem("token");
     setToken(null);
     setCurrentUser(null);

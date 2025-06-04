@@ -1,7 +1,5 @@
 import axios from "axios";
 
-console.log("VITE_API_URL is:", import.meta.env.VITE_API_URL);
-
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL, // should now be "http://localhost:3000/api"
 });
