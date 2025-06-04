@@ -4,8 +4,9 @@ import { useAuth } from "./contexts/useAuth";
 
 function Footer() {
   const { isAuthenticated, currentUser } = useAuth();
+  console.log("Footer render → isAuthenticated=", isAuthenticated, "currentUser=", currentUser);
   return (
-    <footer style={{ marginTop: 20, fontSize: 12 }}>
+    <footer style={{ marginTop: 20, fontSize: 12, textAlign: "center" }}>
       {isAuthenticated ? `Logged in as ${currentUser?.username}` : "Not logged in"}
     </footer>
   );

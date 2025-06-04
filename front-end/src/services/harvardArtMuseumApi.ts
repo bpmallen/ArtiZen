@@ -68,7 +68,7 @@ export async function fetchHarvardPage(
   );
 
   const url = `${HARVARD_BASE_URL}/object?${params.toString()}`;
-  console.log("🔗 Harvard fetch URL:", url);
+  // console.log("🔗 Harvard fetch URL:", url);
 
   const res = await fetch(url);
   const text = await res.text();

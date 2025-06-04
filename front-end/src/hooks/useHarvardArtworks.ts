@@ -19,7 +19,7 @@ export function useHarvardArtworks(
     setLoading(true);
     fetchHarvardPage(page, PAGE_SIZE, searchTerm, filters, sort)
       .then(({ artworks, total }) => {
-        console.log("🔍 Harvard hook result:", { artworks, total });
+        // console.log("🔍 Harvard hook result:", { artworks, total });
         setArtworks(artworks);
         setTotal(total);
         setError(null);
