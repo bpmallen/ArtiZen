@@ -37,7 +37,6 @@ export async function fetchHarvardPage(
     ...(filters.dateEnd && { dateend: String(filters.dateEnd) }),
   });
 
-  // Add additional filters if present:
   if (filters.classification) {
     params.set("classification", String(filters.classification));
   }
@@ -51,11 +50,10 @@ export async function fetchHarvardPage(
     params.set("keyword", filters.keyword);
   }
 
-  // We will sort client‐side, so do NOT send sort/sortorder to the API.
-  // Ask only for the fields we need:
   params.set(
     "fields",
     [
+      "id",
       "objectnumber",
       "title",
       "dated",
@@ -89,25 +87,21 @@ export async function fetchHarvardPage(
   const records: HarvardArtwork[] = data.records ?? [];
   const total = data.info?.totalrecords ?? 0;
 
-  // Map each record → CombinedArtwork, picking thumbnail from primaryimageurl or images[0].baseimageurl
-  // Then filter out any entry whose thumbnail is still null.
   const artworks: CombinedArtwork[] = records
     .map((r) => {
-      // Try the direct “primaryimageurl” first; otherwise fall back to first images[].baseimageurl
       const thumb = r.primaryimageurl ?? r.images?.[0]?.baseimageurl ?? null;
 
       return {
-        // NOTE: CombinedArtwork.id is a non‐nullable string
-        id: r.objectnumber,
-        // CombinedArtwork.title must be string, not null
+        id: r.id.toString(),
+
         title: r.title || "",
-        // CombinedArtwork.artistDisplayName is allowed to be string|null
+
         artistDisplayName: r.people?.map((p) => p.name).join(", ") || null,
-        // this might be null → we’ll filter out down below
+
         primaryImageSmall: thumb,
-        // source must be the literal "harvard"
+
         source: "harvard" as const,
-        // harvardSlim is an object in CombinedArtwork
+
         harvardSlim: {
           id: r.id,
           objectnumber: r.objectnumber,
@@ -118,11 +112,11 @@ export async function fetchHarvardPage(
           people: r.people,
           primaryimageurl: r.primaryimageurl,
         },
-        // harvardData holds the full original record
+
         harvardData: r,
       };
     })
-    // Filter out any artwork whose `primaryImageSmall` is still null
+
     .filter((a) => a.primaryImageSmall !== null);
 
   return { artworks, total };

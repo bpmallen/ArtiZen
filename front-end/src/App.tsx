@@ -3,6 +3,7 @@ import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NavBar from "./components/Navbar";
 import ArtworkListPage from "./pages/ArtworkListPage";
+import ArtworkDetailPage from "./pages/ArtworkDetailPage";
 import LoginModal from "./components/LoginModal";
 import RegisterModal from "./components/RegisterModal";
 import CollectionsPage from "./pages/CollectionsPage";
@@ -28,6 +29,7 @@ export default function App() {
       <NavBar />
       <Routes>
         <Route path="/" element={<ArtworkListPage />} />
+        <Route path="/artwork/:source/:artworkId" element={<ArtworkDetailPage />} />
 
         <Route
           path="/collections"
