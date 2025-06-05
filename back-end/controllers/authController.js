@@ -28,7 +28,7 @@ export const register = async (req, res, next) => {
 
     res.status(201).json({
       user: {
-        id: user._id,
+        _id: user._id,
         username: user.username,
         profileImageUrl: user.profileImageUrl,
       },
@@ -63,7 +63,7 @@ export const login = async (req, res, next) => {
 
     res.json({
       user: {
-        id: user._id,
+        _id: user._id,
         username: user.username,
         profileImageUrl: user.profileImageUrl,
       },

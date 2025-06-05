@@ -1,34 +1,48 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 
-export default function NavBar() {
+interface NavBarProps {
+  onLoginClick: () => void;
+  onRegisterClick: () => void;
+}
+
+export default function NavBar({ onLoginClick, onRegisterClick }: NavBarProps) {
   const { isAuthenticated, currentUser, logout } = useAuth();
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        padding: "1rem 2rem",
-        borderBottom: "1px solid #eee",
-      }}
-    >
-      <Link to="/" style={{ fontSize: "1.2rem", fontWeight: 600 }}>
-        Art Explorer
+    <nav className="flex items-center justify-between p-4 bg-gray-100">
+      <Link to="/" className="text-xl font-bold">
+        Exhibition Curator
       </Link>
 
-      <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-        {!isAuthenticated ? (
+      <div className="flex items-center gap-4">
+        {isAuthenticated ? (
           <>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
+            {currentUser?.profileImageUrl && (
+              <img
+                src={currentUser.profileImageUrl}
+                alt={currentUser.username}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            )}
+            <span className="font-medium">{currentUser?.username}</span>
+            <Link to="/collections" className="hover:underline">
+              My Collections
+            </Link>
+            <Link to="/profile" className="hover:underline">
+              Profile
+            </Link>
+            <button onClick={logout} className="text-red-600 hover:underline">
+              Logout
+            </button>
           </>
         ) : (
           <>
-            <span>Welcome, {currentUser?.username}</span>
-            <Link to="/collections">My Collections</Link>
-            <button onClick={logout} style={{ cursor: "pointer" }}>
-              Logout
+            <button onClick={onLoginClick} className="hover:underline text-blue-600">
+              Login
+            </button>
+            <button onClick={onRegisterClick} className="hover:underline text-green-600">
+              Register
             </button>
           </>
         )}
