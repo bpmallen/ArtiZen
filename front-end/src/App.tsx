@@ -3,13 +3,11 @@ import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NavBar from "./components/Navbar";
 import ArtworkListPage from "./pages/ArtworkListPage";
-// import LoginPage from './pages/LoginPage';      //
-// import RegisterPage from './pages/RegisterPage';//
 import LoginModal from "./components/LoginModal";
 import RegisterModal from "./components/RegisterModal";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionDetailPage from "./pages/CollectionDetailPage";
-// import ProfilePage from "./pages/ProfilePage";
+import ProfilePage from "./pages/ProfilePage";
 import { useAuth } from "./contexts/useAuth";
 
 interface ProtectedRouteProps {
@@ -27,10 +25,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <NavBar
-        onLoginClick={() => setShowLoginModal(true)}
-        onRegisterClick={() => setShowRegisterModal(true)}
-      />
+      <NavBar />
       <Routes>
         <Route path="/" element={<ArtworkListPage />} />
 
@@ -47,6 +42,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <CollectionDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />

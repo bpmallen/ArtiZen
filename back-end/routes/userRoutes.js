@@ -7,6 +7,7 @@ import {
   renameCollection,
   deleteCollection,
 } from "../controllers/collectionController.js";
+import { updateUser } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -30,6 +31,9 @@ router.put("/:userId/collections/:oldName", protect, renameCollection);
 
 // DELETE an entire collection
 router.delete("/:userId/collections/:colName", protect, deleteCollection);
+
+// PUT /api/users/:userId
+router.put("/:userId", protect, updateUser);
 
 router.get("/test", protect, (req, res) => {
   res.json({ message: "Protected user route is working!" });

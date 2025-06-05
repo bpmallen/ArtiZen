@@ -1,4 +1,3 @@
-// front-end/src/contexts/AuthContextDefinition.ts
 import { createContext } from "react";
 
 export interface User {
@@ -13,6 +12,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
+  setCurrentUser: (user: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
