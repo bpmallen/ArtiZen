@@ -31,17 +31,33 @@ export default function CollectionsPage() {
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>My Collections</h2>
+    <div className="p-4">
+      {/*  List of collections with links */}
+      <h2 className="text-2xl font-semibold mb-4">My Collections</h2>
+      <div className="space-y-2 mb-6">
+        {collections.length === 0 ? (
+          <p>No collections yet.</p>
+        ) : (
+          collections.map((col: Collection) => (
+            <Link
+              key={col.name}
+              to={col.name} // “Greece_favourites” etc.
+              className="block text-blue-600 hover:underline"
+            >
+              {col.name} ({col.items.length} items)
+            </Link>
+          ))
+        )}
+      </div>
 
-      {/* New collection form */}
-      <div style={{ marginBottom: 20 }}>
+      {/*  Create‐new‐collection form */}
+      <div className="mb-8">
         <input
           type="text"
           placeholder="New collection name"
+          className="border border-gray-400 rounded px-2 py-1 mr-2"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          style={{ padding: "0.5rem", width: "200px" }}
         />
         <button
           disabled={!newName.trim()}
@@ -49,24 +65,15 @@ export default function CollectionsPage() {
             createMutation.mutate(newName.trim());
             setNewName("");
           }}
-          style={{ marginLeft: 8, padding: "0.5rem" }}
+          className={`px-4 py-2 rounded text-white ${
+            newName.trim() ? "bg-green-600 hover:bg-green-700" : "bg-gray-300 cursor-not-allowed"
+          }`}
         >
           Create
         </button>
       </div>
 
-      {/* List each collection with its item count */}
-      {collections.length === 0 ? (
-        <p>You don’t have any collections yet.</p>
-      ) : (
-        collections.map((col: Collection) => (
-          <div key={col.name} style={{ marginBottom: 10 }}>
-            <Link to={`/collections/${col.name}`} className="text-blue-600 hover:underline">
-              {col.name} ({col.items.length} items)
-            </Link>
-          </div>
-        ))
-      )}
+      {/* Outlet for the nested route (/collections/:collectionName) */}
       <Outlet />
     </div>
   );

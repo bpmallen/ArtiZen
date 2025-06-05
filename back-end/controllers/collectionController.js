@@ -133,3 +133,63 @@ export const removeItemFromCollection = async (req, res, next) => {
     next(error);
   }
 };
+
+// PUT /api/users/:userId/collections/:oldName
+export const renameCollection = async (req, res, next) => {
+  try {
+    const { userId, oldName } = req.params;
+    const { newName } = req.body;
+
+    if (!newName || typeof newName !== "string") {
+      return res.status(400).json({ message: "newName is required and must be a string." });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const collection = user.collections.find((c) => c.name === oldName);
+    if (!collection) {
+      return res.status(404).json({ message: `Collection "${oldName}" not found.` });
+    }
+
+    const conflict = user.collections.find((c) => c.name === newName);
+    if (conflict) {
+      return res.status(400).json({ message: `A collection named "${newName}" already exists.` });
+    }
+
+    collection.name = newName;
+    await user.save();
+
+    return res.status(200).json({ collections: user.collections });
+  } catch (err) {
+    console.error("Error in renameCollection:", err);
+    next(err);
+  }
+};
+
+// DELETE /api/users/:userId/collections/:colName
+export const deleteCollection = async (req, res, next) => {
+  try {
+    const { userId, colName } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const beforeCount = user.collections.length;
+    user.collections = user.collections.filter((c) => c.name !== colName);
+
+    if (user.collections.length === beforeCount) {
+      return res.status(404).json({ message: `Collection "${colName}" not found.` });
+    }
+
+    await user.save();
+    return res.status(200).json({ collections: user.collections });
+  } catch (err) {
+    console.error("Error in deleteCollection:", err);
+    next(err);
+  }
+};
