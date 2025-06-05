@@ -99,7 +99,7 @@ export const removeItemFromCollection = async (req, res, next) => {
     if (!ensureSelf(req, res)) return;
 
     const { colName, artworkId, userId } = req.params;
-    const { source } = req.query;
+    const source = req.query.source;
 
     if (!source) {
       return res.status(400).json({ message: "source is required as query param." });

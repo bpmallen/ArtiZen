@@ -1,12 +1,24 @@
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { useCollections } from "../hooks/useCollections";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useQueries,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { apiClient } from "../services/apiClient";
+import { fetchMetById, fetchHarvardById } from "../services/artworkDetails";
 
 interface RemoveItemArgs {
   artworkId: string;
   source: "met" | "harvard";
+}
+
+interface ArtworkDetails {
+  primaryImageSmall: string;
+  title: string;
+  date: number | string;
 }
 
 export default function CollectionDetailPage() {
@@ -14,11 +26,24 @@ export default function CollectionDetailPage() {
   const { collectionName } = useParams<{ collectionName: string }>();
   const qc = useQueryClient();
 
-  // Fetch all collections, then find the one matching `collectionName`
-  const { data: collections = [], isLoading } = useCollections();
+  //  Fetch all collections, then pick the one matching URL param
+  const { data: collections = [], isLoading: collectionsLoading } = useCollections();
   const collection = collections.find((c) => c.name === collectionName);
 
-  // Mutation to remove an artwork from this collection:
+  // Prepare a an array of items (even if collection is undefined)
+  const items = collection ? collection.items : [];
+
+  // useQueries must be called unconditionally. If `items` is empty, queries: [].
+  const detailQueries: UseQueryResult<ArtworkDetails, Error>[] = useQueries({
+    queries: items.map((item) => ({
+      queryKey: [item.source, item.artworkId],
+      queryFn: (): Promise<ArtworkDetails> =>
+        item.source === "met" ? fetchMetById(item.artworkId) : fetchHarvardById(item.artworkId),
+      staleTime: Infinity,
+    })),
+  });
+
+  // Mutation to remove an item from this collection
   const removeMutation = useMutation<void, Error, RemoveItemArgs>({
     mutationFn: async ({ artworkId, source }) => {
       await apiClient.delete(
@@ -32,8 +57,8 @@ export default function CollectionDetailPage() {
     },
   });
 
-  if (isLoading) {
-    return <p className="p-4">Loading…</p>;
+  if (collectionsLoading) {
+    return <p className="p-4">Loading collections…</p>;
   }
 
   if (!collection) {
@@ -47,36 +72,59 @@ export default function CollectionDetailPage() {
     );
   }
 
+  // 6) Render the detail view
   return (
     <div className="p-4">
       <h2 className="text-2xl font-semibold mb-4">{collection.name}</h2>
 
-      {collection.items.length === 0 ? (
+      {items.length === 0 ? (
         <p>No artworks saved here yet.</p>
       ) : (
         <div className="space-y-4">
-          {collection.items.map((item) => (
-            <div
-              key={`${item.source}-${item.artworkId}`}
-              className="flex items-center justify-between border p-3 rounded"
-            >
-              <div>
-                <span className="font-medium">{item.artworkId}</span>{" "}
-                <span className="text-sm text-gray-600">({item.source})</span>
-              </div>
-              <button
-                onClick={() =>
-                  removeMutation.mutate({
-                    artworkId: item.artworkId,
-                    source: item.source,
-                  })
-                }
-                className="text-red-500 hover:text-red-700 text-sm"
+          {items.map((item, index) => {
+            const { data: details, isLoading: isDetailsLoading } = detailQueries[index];
+
+            return (
+              <div
+                key={`${item.source}-${item.artworkId}`}
+                className="flex items-center justify-between border p-3 rounded"
               >
-                Remove
-              </button>
-            </div>
-          ))}
+                <div className="flex items-center gap-3">
+                  {isDetailsLoading || !details ? (
+                    <div className="w-16 h-16 bg-gray-200 animate-pulse rounded" />
+                  ) : (
+                    <img
+                      src={details.primaryImageSmall}
+                      alt={details.title}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+
+                  <div>
+                    <div className="font-medium">
+                      {isDetailsLoading || !details ? "Loading…" : details.title}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {isDetailsLoading || !details ? "" : details.date ?? "n.d."}{" "}
+                      <span className="italic">({item.source.toUpperCase()})</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() =>
+                    removeMutation.mutate({
+                      artworkId: item.artworkId,
+                      source: item.source,
+                    })
+                  }
+                  className="text-red-500 hover:text-red-700 text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 
