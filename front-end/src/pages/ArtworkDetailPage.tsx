@@ -59,9 +59,11 @@ export default function ArtworkDetailPage() {
   // Use 'objectDate' (string) for Met, and 'date' (could be number|string) for Harvard
   const dateString =
     source === "met"
-      ? (detail as MetDetail).objectDate // full string “ca. 1512–15”
-      : typeof (detail as HarvardDetail).date === "string"
-      ? ((detail as HarvardDetail).date as string)
+      ? (detail as MetDetail).objectDate
+      : (detail as HarvardDetail).dated
+      ? (detail as HarvardDetail).dated
+      : (detail as HarvardDetail).dateend != null
+      ? String((detail as HarvardDetail).dateend)
       : null;
 
   // Met‐specific fields
@@ -72,32 +74,43 @@ export default function ArtworkDetailPage() {
   let dimensionsDisplay = "";
   let creditDisplay = "";
   let metLabelText: string | null = null;
-
   if (source === "met") {
     const met = detail as MetDetail;
     artistDisplay = met.artistDisplayName || "Unknown artist";
-    artistBio = met.artistDisplayBio || ""; // ← Now valid
+    artistBio = met.artistDisplayBio || "";
     mediumDisplay = met.medium || "Unknown medium";
     cultureDisplay = met.culture || "Unknown culture";
     dimensionsDisplay = met.dimensions || "";
     creditDisplay = met.creditLine || "";
     metLabelText = met.labelText || null;
-    console.log("metLabelText = ", metLabelText);
-  } else {
+  }
+
+  // Harvard‐specific fields
+  let harvPeople: string | null = null;
+  let harvMedium: string | null = null;
+  let harvCulture: string | null = null;
+  let harvDimensions: string | null = null;
+  let harvCredit: string | null = null;
+  let harvProvenance: string | null = null;
+  let harvClassification: string | null = null;
+  let harvObjectNum: string | null = null;
+  if (source === "harvard") {
     const harv = detail as HarvardDetail;
-    artistDisplay = harv.people.length ? harv.people.map((p) => p.name).join(", ") : "Unknown";
-    mediumDisplay = harv.medium || "Unknown medium";
-    cultureDisplay = harv.culture || "Unknown culture";
-    dimensionsDisplay = harv.dimensions || "";
-    creditDisplay = harv.creditline || "";
-    // provenanceDisplay = harv.provenance || "";
+    harvPeople = harv.people.length ? harv.people.map((p) => p.name).join(", ") : "Unknown";
+    harvMedium = harv.medium || "Unknown medium";
+    harvCulture = harv.culture || "Unknown culture";
+    harvDimensions = harv.dimensions || "";
+    harvCredit = harv.creditline || "";
+    harvProvenance = harv.provenance || "";
+    harvClassification = harv.classification || "";
+    harvObjectNum = harv.objectnumber || "";
   }
 
   const combined: CombinedArtwork = {
     id: source === "met" ? Number(artworkId!) : artworkId!,
     source: source!,
     title: title || null,
-    artistDisplayName: artistDisplay || null,
+    artistDisplayName: source === "met" ? artistDisplay || null : harvPeople || null,
     primaryImageSmall: imageUrl,
     metSlim:
       source === "met"
@@ -106,8 +119,8 @@ export default function ArtworkDetailPage() {
             title: title || null,
             artistDisplayName: artistDisplay || null,
             primaryImageSmall: imageUrl,
-
-            objectEndDate: ((detail as MetDetail).date as number) ?? null,
+            objectEndDate:
+              typeof (detail as MetDetail).date === "number" ? (detail as MetDetail).date : null,
           } as MetSlim)
         : undefined,
     harvardSlim:
@@ -116,15 +129,11 @@ export default function ArtworkDetailPage() {
             id: 0,
             objectnumber: artworkId!,
             title: title || null,
-
-            dated:
-              typeof (detail as HarvardDetail).date === "string"
-                ? ((detail as HarvardDetail).date as string)
-                : null,
+            dated: (detail as HarvardDetail).dated || null,
             datebegin: null,
             dateend:
-              typeof (detail as HarvardDetail).date === "number"
-                ? ((detail as HarvardDetail).date as number)
+              typeof (detail as HarvardDetail).dateend === "number"
+                ? (detail as HarvardDetail).dateend
                 : null,
             people: (detail as HarvardDetail).people,
             primaryimageurl: imageUrl,
@@ -159,37 +168,79 @@ export default function ArtworkDetailPage() {
             <span className="font-medium">Date:</span> {dateString || "Unknown"}
           </p>
 
-          {/*  Artist name and bio */}
-          <p className="text-gray-700">
-            <span className="font-medium">Artist:</span> {artistDisplay}
-          </p>
-          {source === "met" && artistBio && <p className="text-gray-600 italic">{artistBio}</p>}
+          {source === "met" ? (
+            <>
+              {/* MET: Artist & Bio */}
+              <p className="text-gray-700">
+                <span className="font-medium">Artist:</span> {artistDisplay}
+              </p>
+              {artistBio && <p className="text-gray-600 italic">{artistBio}</p>}
 
-          {/* Medium and Culture */}
-          <p className="text-gray-700">
-            <span className="font-medium">Medium:</span> {mediumDisplay}
-          </p>
-          <p className="text-gray-700">
-            <span className="font-medium">Culture:</span> {cultureDisplay}
-          </p>
+              {/*MET: Medium, Culture, Dimensions, Credit  */}
+              <p className="text-gray-700">
+                <span className="font-medium">Medium:</span> {mediumDisplay}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-medium">Culture:</span> {cultureDisplay}
+              </p>
+              {dimensionsDisplay && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Dimensions:</span> {dimensionsDisplay}
+                </p>
+              )}
+              {creditDisplay && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Credit Line:</span> {creditDisplay}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              {/* HARVARD: Artist */}
+              <p className="text-gray-700">
+                <span className="font-medium">Artist:</span> {harvPeople}
+              </p>
 
-          {/* Dimensions */}
-          {dimensionsDisplay && (
-            <p className="text-gray-700">
-              <span className="font-medium">Dimensions:</span> {dimensionsDisplay}
-            </p>
-          )}
+              {/* ─── HARVARD: Medium, Culture, Dimensions, Credit ─── */}
+              <p className="text-gray-700">
+                <span className="font-medium">Medium:</span> {harvMedium}
+              </p>
+              <p className="text-gray-700">
+                <span className="font-medium">Culture:</span> {harvCulture}
+              </p>
+              {harvDimensions && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Dimensions:</span> {harvDimensions}
+                </p>
+              )}
+              {harvCredit && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Credit Line:</span> {harvCredit}
+                </p>
+              )}
 
-          {/* Credit Line */}
-          {creditDisplay && (
-            <p className="text-gray-700">
-              <span className="font-medium">Credit Line:</span> {creditDisplay}
-            </p>
+              {/* HARVARD: Classification, Provenance, Object # */}
+              {harvClassification && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Classification:</span> {harvClassification}
+                </p>
+              )}
+              {harvProvenance && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Provenance:</span> {harvProvenance}
+                </p>
+              )}
+              {harvObjectNum && (
+                <p className="text-gray-700">
+                  <span className="font-medium">Object #:</span> {harvObjectNum}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* About this work (Met only) */}
+      {/*MET ONLY: “About this work”*/}
       {source === "met" && metLabelText ? (
         <div className="prose max-w-3xl mx-auto p-4 bg-gray-50 rounded">
           <h2 className="text-2xl font-semibold mb-2">About this work</h2>
@@ -202,6 +253,7 @@ export default function ArtworkDetailPage() {
         </div>
       ) : null}
 
+      {/* Add to Collection” Button */}
       {isAuthenticated && (
         <div className="max-w-3xl mx-auto">
           <button

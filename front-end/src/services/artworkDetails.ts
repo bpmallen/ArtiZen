@@ -56,43 +56,53 @@ export async function fetchMetById(objectId: string): Promise<MetDetail> {
 export interface HarvardDetail {
   primaryImageSmall: string | null;
   title: string;
-  date: string | number | null;
+  dated: string | null; // ← the textual date (e.g. “c. 1648-1656”)
+  dateend: number | null; // ← the numeric end‐year
   people: { name: string }[];
   medium: string | null;
   culture: string | null;
   dimensions: string | null;
   creditline: string | null;
   provenance: string | null;
+  classification: string | null;
+  objectnumber: string;
 }
 
 export async function fetchHarvardById(objectNumber: string): Promise<HarvardDetail> {
+  const fields = [
+    "primaryimageurl",
+    "title",
+    "dated", // ← request the textual “dated” field
+    "dateend",
+    "people",
+    "medium",
+    "culture",
+    "dimensions",
+    "creditline",
+    "provenance",
+    "classification",
+    "objectnumber",
+  ].join(",");
+
   const res = await apiClient.get(
     `https://api.harvardartmuseums.org/object/${objectNumber}?apikey=${
       import.meta.env.VITE_HARVARD_API_KEY
-    }&fields=primaryimageurl,title,dateend,people,medium,culture,dimensions,creditline,provenance`
+    }&fields=${fields}`
   );
 
-  const {
-    primaryimageurl,
-    title,
-    dateend,
-    people,
-    medium,
-    culture,
-    dimensions,
-    creditline,
-    provenance,
-  } = res.data;
-
+  const raw = res.data;
   return {
-    primaryImageSmall: primaryimageurl || null,
-    title: title || "Untitled",
-    date: dateend ?? null,
-    people: Array.isArray(people) ? people : [],
-    medium: medium || null,
-    culture: culture || null,
-    dimensions: dimensions || null,
-    creditline: creditline || null,
-    provenance: provenance || null,
+    primaryImageSmall: raw.primaryimageurl || null,
+    title: raw.title || "Untitled",
+    dated: raw.dated || null, // ← include `dated`
+    dateend: raw.dateend ?? null, // ← include `dateend`
+    people: Array.isArray(raw.people) ? raw.people : [],
+    medium: raw.medium || null,
+    culture: raw.culture || null,
+    dimensions: raw.dimensions || null,
+    creditline: raw.creditline || null,
+    provenance: raw.provenance || null,
+    classification: raw.classification || null,
+    objectnumber: raw.objectnumber,
   };
 }
