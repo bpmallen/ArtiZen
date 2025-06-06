@@ -26,7 +26,10 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <NavBar />
+      <NavBar
+        onOpenLogin={() => setShowLoginModal(true)}
+        onOpenRegister={() => setShowRegisterModal(true)}
+      />
       <Routes>
         <Route path="/" element={<ArtworkListPage />} />
         <Route path="/artwork/:source/:artworkId" element={<ArtworkDetailPage />} />

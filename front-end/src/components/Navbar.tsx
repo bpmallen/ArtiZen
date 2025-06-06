@@ -1,7 +1,12 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 
-export default function NavBar() {
+interface NavBarProps {
+  onOpenLogin: () => void;
+  onOpenRegister: () => void;
+}
+
+export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
   const { isAuthenticated, currentUser, logout } = useAuth();
 
   return (
@@ -38,16 +43,10 @@ export default function NavBar() {
           </>
         ) : (
           <>
-            <button
-              onClick={() => window.dispatchEvent(new Event("openLogin"))}
-              className="text-blue-600 hover:underline"
-            >
+            <button onClick={onOpenLogin} className="text-blue-600 hover:underline">
               Login
             </button>
-            <button
-              onClick={() => window.dispatchEvent(new Event("openRegister"))}
-              className="text-green-600 hover:underline"
-            >
+            <button onClick={onOpenRegister} className="text-green-600 hover:underline">
               Register
             </button>
           </>
