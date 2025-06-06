@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import Modal from "./Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, setAuthToken } from "../services/apiClient";
@@ -18,7 +18,7 @@ interface RegisterResponse {
 export default function RegisterModal({ onClose }: { onClose: () => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
+  const [showPassword, setShowPassword] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const queryClient = useQueryClient();
   const { login } = useAuth();
@@ -34,14 +34,10 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
     },
     onSuccess: (data) => {
       const { user, token } = data;
-
       localStorage.setItem("token", token);
       setAuthToken(token);
-
       login(token, user);
-
       queryClient.invalidateQueries({ queryKey: ["collections", user._id] });
-
       onClose();
     },
     onError: (err) => {
@@ -76,14 +72,24 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Choose a password"
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500 bg-white text-gray-800"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Choose a password"
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500 bg-white text-gray-800"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-800 focus:outline-none"
+              style={{ top: "50%", transform: "translateY(-50%)" }}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
 
         <div>
