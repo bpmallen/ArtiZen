@@ -1,108 +1,100 @@
 import { apiClient } from "./apiClient";
 
 export interface MetDetail {
+  objectID: number;
   primaryImageSmall: string | null;
-  title: string;
-  date: string | number | null;
-  objectDate: string | null;
+  title: string | null;
+  department: string | null;
+  objectName: string | null;
+  culture: string | null;
+  period: string | null;
+  dynasty: string | null;
+  reign: string | null;
+  portfolio: string | null;
+  artistRole: string | null;
+  artistPrefix: string | null;
   artistDisplayName: string | null;
   artistDisplayBio: string | null;
+  artistSuffix: string | null;
+  artistAlphaSort: string | null;
+  artistNationality: string | null;
+  artistBeginDate: string | null;
+  artistEndDate: string | null;
+  artistGender: string | null;
+  objectDate: string | null;
+  objectBeginDate: number | null;
+  objectEndDate: number | null;
   medium: string | null;
-  culture: string | null;
   dimensions: string | null;
+  measurements: Array<Record<string, unknown>>;
   creditLine: string | null;
-  labelText: string | null;
+  geographyType: string | null;
+  city: string | null;
+  state: string | null;
+  county: string | null;
+  country: string | null;
+  region: string | null;
+  subregion: string | null;
+  locale: string | null;
+  locus: string | null;
+  excavation: string | null;
+  river: string | null;
+  classification: string | null;
+  rightsAndReproduction: string | null;
+  linkResource: string | null;
+  metadataDate: string | null;
+  repository: string | null;
   objectURL: string | null;
+  tags: Array<Record<string, unknown>> | null;
+  objectWikidata_URL: string | null;
+  isTimelineWork: boolean;
+  GalleryNumber: string | null;
+  labelText?: string | null;
 }
 
 export async function fetchMetById(objectId: string): Promise<MetDetail> {
   const res = await apiClient.get(
     `https://collectionapi.metmuseum.org/public/collection/v1/objects/${objectId}`
   );
+  return res.data as MetDetail;
+}
 
-  const raw = res.data;
-
-  const {
-    primaryImageSmall,
-    title,
-    objectEndDate,
-    objectDate,
-    artistDisplayName,
-    artistDisplayBio,
-    medium,
-    culture,
-    dimensions,
-    creditLine,
-    labelText,
-    objectURL,
-  } = raw;
-
-  return {
-    primaryImageSmall: primaryImageSmall || null,
-    title: title || "Untitled",
-    date: objectEndDate ?? null,
-    objectDate: objectDate || null,
-    artistDisplayName: artistDisplayName || null,
-    artistDisplayBio: artistDisplayBio || null,
-    medium: medium || null,
-    culture: culture || null,
-    dimensions: dimensions || null,
-    creditLine: creditLine || null,
-    labelText: labelText || null,
-    objectURL: objectURL || null,
-  };
+//
+// ─── HARVARD INTERFACE + FETCH ────────────────────────────────────────────────
+//
+export interface HarvardPerson {
+  name: string;
+  role: string;
+  displaydate: string | null;
 }
 
 export interface HarvardDetail {
-  primaryImageSmall: string | null;
-  title: string;
-  dated: string | null; // ← the textual date (e.g. “c. 1648-1656”)
-  dateend: number | null; // ← the numeric end‐year
-  people: { name: string }[];
+  id: number;
+  objectid: number;
+  objectnumber: string;
+  title: string | null;
+  dated: string | null;
+  datebegin: number | null;
+  dateend: number | null;
+  classification: string | null;
   medium: string | null;
   culture: string | null;
   dimensions: string | null;
+  department: string | null;
   creditline: string | null;
+  description: string | null;
   provenance: string | null;
-  classification: string | null;
-  objectnumber: string;
+  labeltext: string | null;
+  primaryimageurl: string | null;
+  people: HarvardPerson[];
+  url: string | null;
 }
 
 export async function fetchHarvardById(objectNumber: string): Promise<HarvardDetail> {
-  const fields = [
-    "primaryimageurl",
-    "title",
-    "dated", // ← request the textual “dated” field
-    "dateend",
-    "people",
-    "medium",
-    "culture",
-    "dimensions",
-    "creditline",
-    "provenance",
-    "classification",
-    "objectnumber",
-  ].join(",");
-
   const res = await apiClient.get(
     `https://api.harvardartmuseums.org/object/${objectNumber}?apikey=${
       import.meta.env.VITE_HARVARD_API_KEY
-    }&fields=${fields}`
+    }`
   );
-
-  const raw = res.data;
-  return {
-    primaryImageSmall: raw.primaryimageurl || null,
-    title: raw.title || "Untitled",
-    dated: raw.dated || null, // ← include `dated`
-    dateend: raw.dateend ?? null, // ← include `dateend`
-    people: Array.isArray(raw.people) ? raw.people : [],
-    medium: raw.medium || null,
-    culture: raw.culture || null,
-    dimensions: raw.dimensions || null,
-    creditline: raw.creditline || null,
-    provenance: raw.provenance || null,
-    classification: raw.classification || null,
-    objectnumber: raw.objectnumber,
-  };
+  return res.data as HarvardDetail;
 }

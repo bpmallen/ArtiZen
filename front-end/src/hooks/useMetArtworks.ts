@@ -1,15 +1,14 @@
-// hooks/useMetArtworks.ts
 import { useState, useEffect } from "react";
 import { fetchMetPageSlim } from "../services/metSlim";
 import type { CombinedArtwork, MetFilters } from "../types/artwork";
 
-const ARTWORKS_PER_PAGE = 5;
+const ARTWORKS_PER_PAGE = 10;
 
 export function useMetArtworks(
   searchTerm: string,
   filters: MetFilters,
   page: number,
-  sort: "dateAsc" | "dateDesc"
+  sort: "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
 ) {
   const [artworks, setArtworks] = useState<CombinedArtwork[]>([]);
   const [total, setTotal] = useState(0);
@@ -19,23 +18,40 @@ export function useMetArtworks(
   useEffect(() => {
     setLoading(true);
     fetchMetPageSlim(page, ARTWORKS_PER_PAGE, searchTerm, filters)
-      .then(({ artworks, total }) => {
-        // optional: sort by dateEndDate if you like
-        const sorted = artworks.sort((a, b) => {
-          const aDate = a.metSlim!.objectEndDate ?? 0;
-          const bDate = b.metSlim!.objectEndDate ?? 0;
-          return sort === "dateAsc" ? aDate - bDate : bDate - aDate;
-        });
+      .then(({ artworks: fetched, total: fetchedTotal }) => {
+        let sorted = [...fetched];
+
+        if (sort === "titleAsc") {
+          sorted = fetched.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+        } else if (sort === "titleDesc") {
+          sorted = fetched.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
+        } else if (sort === "dateAsc") {
+          sorted = fetched.sort((a, b) => {
+            const aDate = a.metSlim?.objectEndDate ?? 0;
+            const bDate = b.metSlim?.objectEndDate ?? 0;
+            return aDate - bDate;
+          });
+        } else if (sort === "dateDesc") {
+          sorted = fetched.sort((a, b) => {
+            const aDate = a.metSlim?.objectEndDate ?? 0;
+            const bDate = b.metSlim?.objectEndDate ?? 0;
+            return bDate - aDate;
+          });
+        }
+
         setArtworks(sorted);
-        setTotal(total);
+        setTotal(fetchedTotal);
+        setError(null);
       })
       .catch((err) => {
-        console.error(err);
+        console.error("useMetArtworks error:", err);
         setError(err);
         setArtworks([]);
         setTotal(0);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+      });
   }, [searchTerm, filters, page, sort]);
 
   return { artworks, total, loading, error };

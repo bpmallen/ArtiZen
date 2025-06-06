@@ -1,10 +1,9 @@
-// front-end/src/pages/ArtworkDetailPage.tsx
 import React from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../contexts/useAuth";
 import CreateCollectionModal from "../components/CreateCollectionModal";
-import type { CombinedArtwork, MetSlim, HarvardSlim } from "../types/artwork";
+
 import {
   fetchMetById,
   type MetDetail,
@@ -37,202 +36,183 @@ export default function ArtworkDetailPage() {
   if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto p-4 text-center">
-        <p>Loading artwork details…</p>
+        <p className="text-white">Loading artwork details…</p>
       </div>
     );
   }
   if (isError) {
     return (
-      <div className="max-w-3xl mx-auto p-4 text-center text-red-600">
-        <p>Error loading artwork details.</p>
-        <p>{(error as Error).message}</p>
+      <div className="max-w-3xl mx-auto p-4 text-center">
+        <p className="text-white">Error loading artwork details.</p>
+        <p className="text-white">{(error as Error).message}</p>
       </div>
     );
   }
 
   const detail = rawDetail!;
+  const isMet = source === "met";
+  const met = detail as MetDetail;
+  const harv = detail as HarvardDetail;
 
-  // Common fields
-  const imageUrl = detail.primaryImageSmall;
+  const imageUrl = isMet ? met.primaryImageSmall : harv.primaryimageurl;
   const title = detail.title;
+  const dateString = isMet ? met.objectDate : harv.dated;
 
-  // Use 'objectDate' (string) for Met, and 'date' (could be number|string) for Harvard
-  const dateString =
-    source === "met"
-      ? (detail as MetDetail).objectDate
-      : (detail as HarvardDetail).dated
-      ? (detail as HarvardDetail).dated
-      : (detail as HarvardDetail).dateend != null
-      ? String((detail as HarvardDetail).dateend)
-      : null;
+  const artistDisplay = isMet
+    ? met.artistDisplayName || "Unknown artist"
+    : harv.people?.length
+    ? harv.people.map((p) => p.name).join(", ")
+    : "Unknown artist";
 
-  // Met‐specific fields
-  let artistDisplay = "";
-  let artistBio = "";
-  let mediumDisplay = "";
-  let cultureDisplay = "";
-  let dimensionsDisplay = "";
-  let creditDisplay = "";
-  let metLabelText: string | null = null;
-  if (source === "met") {
-    const met = detail as MetDetail;
-    artistDisplay = met.artistDisplayName || "Unknown artist";
-    artistBio = met.artistDisplayBio || "";
-    mediumDisplay = met.medium || "Unknown medium";
-    cultureDisplay = met.culture || "Unknown culture";
-    dimensionsDisplay = met.dimensions || "";
-    creditDisplay = met.creditLine || "";
-    metLabelText = met.labelText || null;
-  }
-
-  // Harvard‐specific fields
-  let harvPeople: string | null = null;
-  let harvMedium: string | null = null;
-  let harvCulture: string | null = null;
-  let harvDimensions: string | null = null;
-  let harvCredit: string | null = null;
-  let harvProvenance: string | null = null;
-  let harvClassification: string | null = null;
-  let harvObjectNum: string | null = null;
-  if (source === "harvard") {
-    const harv = detail as HarvardDetail;
-    harvPeople = harv.people.length ? harv.people.map((p) => p.name).join(", ") : "Unknown";
-    harvMedium = harv.medium || "Unknown medium";
-    harvCulture = harv.culture || "Unknown culture";
-    harvDimensions = harv.dimensions || "";
-    harvCredit = harv.creditline || "";
-    harvProvenance = harv.provenance || "";
-    harvClassification = harv.classification || "";
-    harvObjectNum = harv.objectnumber || "";
-  }
-
-  const combined: CombinedArtwork = {
-    id: source === "met" ? Number(artworkId!) : artworkId!,
-    source: source!,
-    title: title || null,
-    artistDisplayName: source === "met" ? artistDisplay || null : harvPeople || null,
-    primaryImageSmall: imageUrl,
-    metSlim:
-      source === "met"
-        ? ({
-            objectID: Number(artworkId!),
-            title: title || null,
-            artistDisplayName: artistDisplay || null,
-            primaryImageSmall: imageUrl,
-            objectEndDate:
-              typeof (detail as MetDetail).date === "number" ? (detail as MetDetail).date : null,
-          } as MetSlim)
-        : undefined,
-    harvardSlim:
-      source === "harvard"
-        ? ({
-            id: 0,
-            objectnumber: artworkId!,
-            title: title || null,
-            dated: (detail as HarvardDetail).dated || null,
-            datebegin: null,
-            dateend:
-              typeof (detail as HarvardDetail).dateend === "number"
-                ? (detail as HarvardDetail).dateend
-                : null,
-            people: (detail as HarvardDetail).people,
-            primaryimageurl: imageUrl,
-          } as HarvardSlim)
-        : undefined,
-  };
+  // Artist bio (MET only)
+  const artistBio = isMet ? met.artistDisplayBio : null;
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <Link to="/" className="text-blue-600 hover:underline">
+      <Link to="/" className="text-blue-400 hover:underline">
         ← Back to Gallery
       </Link>
 
+      {/* Main Image + All Details in One Block*/}
       <div className="flex flex-col md:flex-row gap-8">
         {imageUrl ? (
           <img
             src={imageUrl}
-            alt={title}
+            alt={title || ""}
             className="w-full md:w-1/2 rounded shadow-lg object-contain"
           />
         ) : (
-          <div className="w-full md:w-1/2 h-64 bg-gray-200 flex items-center justify-center">
-            <p className="text-gray-500">No image available</p>
+          <div className="w-full md:w-1/2 h-64 bg-gray-800 flex items-center justify-center">
+            <p className="text-white">No image available</p>
           </div>
         )}
 
         <div className="flex-1 space-y-4">
-          <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
+          {/*  Title + Core Fields */}
+          <h1 className="text-3xl font-bold text-white">{title}</h1>
 
-          {/*  SHOW FULL objectDate STRING */}
-          <p className="text-gray-700">
+          <p className="text-white">
             <span className="font-medium">Date:</span> {dateString || "Unknown"}
           </p>
 
-          {source === "met" ? (
-            <>
-              {/* MET: Artist & Bio */}
-              <p className="text-gray-700">
-                <span className="font-medium">Artist:</span> {artistDisplay}
-              </p>
-              {artistBio && <p className="text-gray-600 italic">{artistBio}</p>}
+          <p className="text-white">
+            <span className="font-medium">Artist:</span> {artistDisplay}
+          </p>
+          {artistBio && <p className="text-white italic">{artistBio}</p>}
 
-              {/*MET: Medium, Culture, Dimensions, Credit  */}
-              <p className="text-gray-700">
-                <span className="font-medium">Medium:</span> {mediumDisplay}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Culture:</span> {cultureDisplay}
-              </p>
-              {dimensionsDisplay && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Dimensions:</span> {dimensionsDisplay}
+          <p className="text-white">
+            <span className="font-medium">Medium:</span>{" "}
+            {isMet ? met.medium || "Unknown" : harv.medium || "Unknown"}
+          </p>
+
+          <p className="text-white">
+            <span className="font-medium">Culture:</span>{" "}
+            {isMet ? met.culture || "Unknown" : harv.culture || "Unknown"}
+          </p>
+
+          {(isMet ? met.dimensions : harv.dimensions) && (
+            <p className="text-white">
+              <span className="font-medium">Dimensions:</span>{" "}
+              {isMet ? met.dimensions : harv.dimensions}
+            </p>
+          )}
+
+          {(isMet ? met.creditLine : harv.creditline) && (
+            <p className="text-white">
+              <span className="font-medium">Credit Line:</span>{" "}
+              {isMet ? met.creditLine : harv.creditline}
+            </p>
+          )}
+
+          {/* Shared Additional Details  */}
+          {isMet ? (
+            <>
+              {met.department && (
+                <p className="text-white">
+                  <span className="font-medium">Department:</span> {met.department}
                 </p>
               )}
-              {creditDisplay && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Credit Line:</span> {creditDisplay}
+              {met.classification && (
+                <p className="text-white">
+                  <span className="font-medium">Classification:</span> {met.classification}
+                </p>
+              )}
+              {met.objectName && (
+                <p className="text-white">
+                  <span className="font-medium">Object Name:</span> {met.objectName}
+                </p>
+              )}
+              {met.period && (
+                <p className="text-white">
+                  <span className="font-medium">Period:</span> {met.period}
+                </p>
+              )}
+              {met.dynasty && (
+                <p className="text-white">
+                  <span className="font-medium">Dynasty:</span> {met.dynasty}
+                </p>
+              )}
+              {met.reign && (
+                <p className="text-white">
+                  <span className="font-medium">Reign:</span> {met.reign}
+                </p>
+              )}
+              {met.country && (
+                <p className="text-white">
+                  <span className="font-medium">Country:</span> {met.country}
+                </p>
+              )}
+              {met.region && (
+                <p className="text-white">
+                  <span className="font-medium">Region:</span> {met.region}
+                </p>
+              )}
+              {met.subregion && (
+                <p className="text-white">
+                  <span className="font-medium">Subregion:</span> {met.subregion}
+                </p>
+              )}
+              {met.city && (
+                <p className="text-white">
+                  <span className="font-medium">City:</span> {met.city}
+                </p>
+              )}
+              {met.state && (
+                <p className="text-white">
+                  <span className="font-medium">State:</span> {met.state}
+                </p>
+              )}
+              {met.excavation && (
+                <p className="text-white">
+                  <span className="font-medium">Excavation:</span> {met.excavation}
+                </p>
+              )}
+              {met.locus && (
+                <p className="text-white">
+                  <span className="font-medium">Locus:</span> {met.locus}
                 </p>
               )}
             </>
           ) : (
             <>
-              {/* HARVARD: Artist */}
-              <p className="text-gray-700">
-                <span className="font-medium">Artist:</span> {harvPeople}
-              </p>
-
-              {/* ─── HARVARD: Medium, Culture, Dimensions, Credit ─── */}
-              <p className="text-gray-700">
-                <span className="font-medium">Medium:</span> {harvMedium}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Culture:</span> {harvCulture}
-              </p>
-              {harvDimensions && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Dimensions:</span> {harvDimensions}
+              {harv.department && (
+                <p className="text-white">
+                  <span className="font-medium">Department:</span> {harv.department}
                 </p>
               )}
-              {harvCredit && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Credit Line:</span> {harvCredit}
+              {harv.classification && (
+                <p className="text-white">
+                  <span className="font-medium">Classification:</span> {harv.classification}
                 </p>
               )}
-
-              {/* HARVARD: Classification, Provenance, Object # */}
-              {harvClassification && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Classification:</span> {harvClassification}
+              {harv.provenance && (
+                <p className="text-white">
+                  <span className="font-medium">Provenance:</span> {harv.provenance}
                 </p>
               )}
-              {harvProvenance && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Provenance:</span> {harvProvenance}
-                </p>
-              )}
-              {harvObjectNum && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Object #:</span> {harvObjectNum}
+              {harv.labeltext && (
+                <p className="text-white">
+                  <span className="font-medium">Label Text:</span> {harv.labeltext}
                 </p>
               )}
             </>
@@ -240,20 +220,7 @@ export default function ArtworkDetailPage() {
         </div>
       </div>
 
-      {/*MET ONLY: “About this work”*/}
-      {source === "met" && metLabelText ? (
-        <div className="prose max-w-3xl mx-auto p-4 bg-gray-50 rounded">
-          <h2 className="text-2xl font-semibold mb-2">About this work</h2>
-          <div className="text-gray-800" dangerouslySetInnerHTML={{ __html: metLabelText }} />
-        </div>
-      ) : source === "met" ? (
-        <div className="max-w-3xl mx-auto p-4 bg-gray-50 rounded text-gray-600">
-          <h2 className="text-2xl font-semibold mb-2">About this work</h2>
-          <p>No description available.</p>
-        </div>
-      ) : null}
-
-      {/* Add to Collection” Button */}
+      {/*  “Add to Collection” Button (if logged in)  */}
       {isAuthenticated && (
         <div className="max-w-3xl mx-auto">
           <button
@@ -266,7 +233,37 @@ export default function ArtworkDetailPage() {
       )}
 
       {isAuthenticated && showModal && (
-        <CreateCollectionModal artwork={combined} close={() => setShowModal(false)} />
+        <CreateCollectionModal
+          artwork={{
+            id: isMet ? Number(artworkId!) : artworkId!,
+            title: detail.title,
+            source: source!,
+            artistDisplayName: artistDisplay,
+            primaryImageSmall: imageUrl,
+            metSlim: isMet
+              ? {
+                  objectID: Number(artworkId!),
+                  title: detail.title,
+                  artistDisplayName: met.artistDisplayName,
+                  primaryImageSmall: imageUrl,
+                  objectEndDate: met.objectEndDate ?? null,
+                }
+              : undefined,
+            harvardSlim: !isMet
+              ? {
+                  id: harv.id,
+                  objectnumber: harv.objectnumber,
+                  title: detail.title,
+                  dated: harv.dated,
+                  datebegin: harv.datebegin,
+                  dateend: harv.dateend,
+                  people: harv.people.map((p) => ({ name: p.name })),
+                  primaryimageurl: harv.primaryimageurl,
+                }
+              : undefined,
+          }}
+          close={() => setShowModal(false)}
+        />
       )}
     </div>
   );

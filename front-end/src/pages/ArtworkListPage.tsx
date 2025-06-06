@@ -6,8 +6,6 @@ import { useHarvardArtworks } from "../hooks/useHarvardArtworks";
 import ArtworkCard from "../components/ArtworkCard";
 
 export default function ArtworkListPage() {
-  const PER_API_PAGE = 5; // each API call fetches 5 items
-
   // ─── Tabs & “ALL” page state ───
   type TabType = "met" | "harvard" | "all";
   const [tab, setTab] = useState<TabType>("met");
@@ -16,11 +14,12 @@ export default function ArtworkListPage() {
   // ─── MET state/hooks ───
   const [metPage, setMetPage] = useState(0);
   const [metFilters, setMetFilters] = useState<MetFilters>({});
-  const [metSort, setMetSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
+  const [metSort, setMetSort] = useState<
+    "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
+  >("relevance");
   const [metInput, setMetInput] = useState("");
   const [metSearch, setMetSearch] = useState("");
 
-  // When in “ALL,” MET’s page is driven by allPage; otherwise by metPage
   const metHookPage = tab === "all" ? allPage : metPage;
   const {
     artworks: metArtworks,
@@ -34,62 +33,58 @@ export default function ArtworkListPage() {
   // ─── Harvard state/hooks ───
   const [harvPage, setHarvPage] = useState(0);
   const [harvFilters, setHarvFilters] = useState<HarvardFilters>({});
-  const [harvSort, setHarvSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
+  const [harvSort, setHarvSort] = useState<
+    "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
+  >("relevance");
   const [harvInput, setHarvInput] = useState("");
   const [harvSearch, setHarvSearch] = useState("");
 
-  // When in “ALL,” Harvard’s page is driven by allPage; otherwise by harvPage
   const harvHookPage = tab === "all" ? allPage : harvPage;
   const {
-    artworks: rawHarv,
+    artworks: harvArtworks,
     total: totalHarv,
     loading: harvLoading,
     error: harvError,
   } = useHarvardArtworks(harvSearch, harvFilters, harvHookPage, harvSort);
 
-  // ─── Client‐side filter + sort for MET page of 5 ───
-  const metToDisplay = useMemo<CombinedArtwork[]>(() => {
-    return metArtworks
-      .filter((a) => {
-        const db = metFilters.dateBegin;
-        const de = metFilters.dateEnd;
-        const year = a.metSlim?.objectEndDate ?? 0;
-        if (db != null && year < db) return false;
-        if (de != null && year > de) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const ay = a.metSlim?.objectEndDate ?? 0;
-        const by = b.metSlim?.objectEndDate ?? 0;
-        return metSort === "dateAsc" ? ay - by : by - ay;
-      });
-  }, [metArtworks, metFilters.dateBegin, metFilters.dateEnd, metSort]);
+  const PER_API_PAGE = 10;
 
-  // ─── Client‐side sort for Harvard page of 5 ───
-  const harvToDisplay = useMemo<CombinedArtwork[]>(() => {
-    return [...rawHarv].sort((a, b) => {
-      const ea = a.harvardSlim?.dateend ?? 0;
-      const eb = b.harvardSlim?.dateend ?? 0;
-      return harvSort === "dateAsc" ? ea - eb : eb - ea;
-    });
-  }, [rawHarv, harvSort]);
+  const metToDisplay = useMemo<CombinedArtwork[]>(() => metArtworks, [metArtworks]);
+  const harvToDisplay = useMemo<CombinedArtwork[]>(() => harvArtworks, [harvArtworks]);
 
-  // ─── Additional state: “ALL” sort‐by‐date ───
-  const [allSort, setAllSort] = useState<"dateAsc" | "dateDesc">("dateAsc");
-
-  // ─── Combine for “ALL” (5 MET + 5 Harvard) and then client‐sort by allSort ───
+  const [allSort, setAllSort] = useState<
+    "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
+  >("relevance");
   const combinedToDisplay = useMemo<CombinedArtwork[]>(() => {
     const merged = [...metToDisplay, ...harvToDisplay];
+    if (allSort === "relevance") {
+      return merged;
+    }
+    if (allSort === "titleAsc") {
+      return merged.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+    }
+    if (allSort === "titleDesc") {
+      return merged.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
+    }
+    if (allSort === "dateAsc") {
+      return merged.sort((a, b) => {
+        const aDate =
+          a.source === "met" ? a.metSlim?.objectEndDate ?? 0 : a.harvardSlim?.dateend ?? 0;
+        const bDate =
+          b.source === "met" ? b.metSlim?.objectEndDate ?? 0 : b.harvardSlim?.dateend ?? 0;
+        return aDate - bDate;
+      });
+    }
+
     return merged.sort((a, b) => {
       const aDate =
         a.source === "met" ? a.metSlim?.objectEndDate ?? 0 : a.harvardSlim?.dateend ?? 0;
       const bDate =
         b.source === "met" ? b.metSlim?.objectEndDate ?? 0 : b.harvardSlim?.dateend ?? 0;
-      return allSort === "dateAsc" ? aDate - bDate : bDate - aDate;
+      return bDate - aDate;
     });
   }, [metToDisplay, harvToDisplay, allSort]);
 
-  // ─── Which array to render based on tab ───
   const artworks = useMemo<CombinedArtwork[]>(() => {
     if (tab === "met") return metToDisplay;
     if (tab === "harvard") return harvToDisplay;
@@ -102,7 +97,6 @@ export default function ArtworkListPage() {
     return Math.max(Math.ceil(totalMet / PER_API_PAGE), Math.ceil(totalHarv / PER_API_PAGE));
   }, [tab, totalMet, totalHarv]);
 
-  // ─── Which page & setter to use ───
   const page = tab === "met" ? metPage : tab === "harvard" ? harvPage : allPage;
   const setPage = useCallback(
     (p: number) => {
@@ -113,15 +107,11 @@ export default function ArtworkListPage() {
     [tab]
   );
 
-  // ─── Combined loading / error ───
   const loading = metLoading || harvLoading;
   const error = metError || harvError;
 
   const handlePrev = () => setPage(Math.max(0, page - 1));
   const handleNext = () => setPage(Math.min(totalPages - 1, page + 1));
-
-  // ─── “ALL” search input ───
-  const [allInput, setAllInput] = useState("");
 
   return (
     <div className="max-w-3xl mx-auto p-4">
@@ -145,11 +135,13 @@ export default function ArtworkListPage() {
         ))}
       </div>
 
-      {/* ─── MET Filters (tab === "met") ─── */}
+      {/*MET Filters  */}
       {tab === "met" && (
         <div className="border p-4 rounded mb-6">
           <h2 className="font-semibold mb-2">MET Filters</h2>
-          <div className="flex gap-2 mb-2">
+
+          {/*  Search Input  */}
+          <div className="flex gap-2 mb-4">
             <input
               className="flex-grow border rounded-l px-3 py-1"
               placeholder="Search MET…"
@@ -166,6 +158,8 @@ export default function ArtworkListPage() {
               Search
             </button>
           </div>
+
+          {/* ─────────── Highlights only ─────────── */}
           <label className="block mb-2">
             <input
               type="checkbox"
@@ -173,16 +167,20 @@ export default function ArtworkListPage() {
             />{" "}
             Highlights only
           </label>
+
+          {/*  Department Dropdown */}
           <label className="block mb-2">
             Department:
             <select
               className="ml-2 border rounded px-2"
-              onChange={(e) =>
+              value={typeof metFilters.departmentId === "number" ? metFilters.departmentId : ""}
+              onChange={(e) => {
+                const val = e.target.value;
                 setMetFilters((f) => ({
                   ...f,
-                  departmentId: e.target.value ? +e.target.value : undefined,
-                }))
-              }
+                  departmentId: val ? Number(val) : undefined,
+                }));
+              }}
             >
               <option value="">All</option>
               {departments.map((d) => (
@@ -192,7 +190,61 @@ export default function ArtworkListPage() {
               ))}
             </select>
           </label>
+
+          {/*  Geographic Location Dropdown  */}
           <label className="block mb-2">
+            Geographic Location:
+            <select
+              className="ml-2 border rounded px-2"
+              value={metFilters.geoLocation ?? ""}
+              onChange={(e) =>
+                setMetFilters((f) => ({
+                  ...f,
+                  geoLocation: e.target.value || undefined,
+                }))
+              }
+            >
+              <option value="">All</option>
+              <option value="Egypt">Egypt</option>
+              <option value="Italy">Italy</option>
+              <option value="China">China</option>
+              <option value="France">France</option>
+              <option value="Greece">Greece</option>
+              <option value="Peru">Peru</option>
+            </select>
+          </label>
+
+          {/*  Date / Era Dropdown  */}
+          <label className="block mb-4">
+            Date / Era:
+            <select
+              className="ml-2 border rounded px-2"
+              value={
+                metFilters.dateBegin != null && metFilters.dateEnd != null
+                  ? `${metFilters.dateBegin}-${metFilters.dateEnd}`
+                  : ""
+              }
+              onChange={(e) => {
+                const [begin, end] = e.target.value.split("-").map(Number);
+                setMetFilters((f) => ({
+                  ...f,
+                  dateBegin: isNaN(begin) ? undefined : begin,
+                  dateEnd: isNaN(end) ? undefined : end,
+                }));
+              }}
+            >
+              <option value="">All</option>
+              <option value="0-1599">Before 1600</option>
+              <option value="1600-1699">1600s</option>
+              <option value="1700-1799">1700s</option>
+              <option value="1800-1899">1800s</option>
+              <option value="1900-1999">1900s</option>
+              <option value="2000-2100">2000s+</option>
+            </select>
+          </label>
+
+          {/*  Medium Input  */}
+          <label className="block mb-4">
             Medium:
             <input
               type="text"
@@ -203,52 +255,35 @@ export default function ArtworkListPage() {
               }
             />
           </label>
-          <div className="flex gap-4 mb-2">
-            <label>
-              Date Begin:
-              <input
-                type="number"
-                className="ml-2 border rounded px-2"
-                onChange={(e) =>
-                  setMetFilters((f) => ({
-                    ...f,
-                    dateBegin: +e.target.value || undefined,
-                  }))
-                }
-              />
-            </label>
-            <label>
-              Date End:
-              <input
-                type="number"
-                className="ml-2 border rounded px-2"
-                onChange={(e) =>
-                  setMetFilters((f) => ({
-                    ...f,
-                    dateEnd: +e.target.value || undefined,
-                  }))
-                }
-              />
-            </label>
-          </div>
-          <label>
-            Sort by date:
+
+          {/* Sort by Dropdown  */}
+          <label className="block">
+            Sort by:
             <select
               className="ml-2 border rounded px-2"
               value={metSort}
-              onChange={(e) => setMetSort(e.target.value as "dateAsc" | "dateDesc")}
+              onChange={(e) =>
+                setMetSort(
+                  e.target.value as "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
+                )
+              }
             >
-              <option value="dateAsc">Oldest ↑</option>
-              <option value="dateDesc">Newest ↓</option>
+              <option value="relevance">Relevance</option>
+              <option value="titleAsc">Title A → Z</option>
+              <option value="titleDesc">Title Z → A</option>
+              <option value="dateDesc">Date Newest → Oldest</option>
+              <option value="dateAsc">Date Oldest → Newest</option>
             </select>
           </label>
         </div>
       )}
 
-      {/* ─── Harvard Filters (tab === "harvard") ─── */}
+      {/*  Harvard Filters */}
       {tab === "harvard" && (
         <div className="border p-4 rounded mb-6">
           <h2 className="font-semibold mb-2">Harvard Filters</h2>
+
+          {/* Search Input */}
           <div className="flex gap-2 mb-4">
             <input
               className="flex-grow border rounded-l px-3 py-1"
@@ -266,6 +301,8 @@ export default function ArtworkListPage() {
               Search
             </button>
           </div>
+
+          {/* Keyword input */}
           <label className="block mb-4">
             Keyword:
             <input
@@ -277,75 +314,94 @@ export default function ArtworkListPage() {
               }
             />
           </label>
+
+          {/* Sort by dropdown */}
           <label className="block">
-            Sort by date:
+            Sort by:
             <select
-              className="w-full border rounded px-2 py-1"
+              className="mt-1 w-full border rounded px-2 py-1"
               value={harvSort}
-              onChange={(e) => setHarvSort(e.target.value as "dateAsc" | "dateDesc")}
+              onChange={(e) =>
+                setHarvSort(
+                  e.target.value as "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
+                )
+              }
             >
-              <option value="dateAsc">Oldest ↑</option>
-              <option value="dateDesc">Newest ↓</option>
+              <option value="relevance">Relevance</option>
+              <option value="titleAsc">Title A → Z</option>
+              <option value="titleDesc">Title Z → A</option>
+              <option value="dateDesc">Date Newest → Oldest</option>
+              <option value="dateAsc">Date Oldest → Newest</option>
             </select>
           </label>
         </div>
       )}
 
-      {/* ─── ALL Filters + Sort (tab === "all") ─── */}
+      {/*  ALL Filters + Sort  */}
       {tab === "all" && (
         <div className="border p-4 rounded mb-6">
           <h2 className="font-semibold mb-2">Search Both MET + Harvard</h2>
+
+          {/* Combined Search Input */}
           <div className="flex gap-2 mb-4">
             <input
               className="flex-grow border rounded-l px-3 py-1"
               placeholder="Search both…"
-              value={allInput}
-              onChange={(e) => setAllInput(e.target.value)}
+              value={metInput}
+              onChange={(e) => setMetInput(e.target.value)}
             />
             <button
               className="bg-blue-600 text-white px-4 rounded-r"
               onClick={() => {
-                setMetSearch(allInput.trim());
-                setHarvSearch(allInput.trim());
+                setMetSearch(metInput.trim());
+                setHarvSearch(metInput.trim());
                 setAllPage(0);
               }}
             >
               Search
             </button>
           </div>
+
+          {/* Combined Sort */}
           <label className="block mb-4">
-            Sort by date:
+            Sort by:
             <select
               className="mt-1 w-full border rounded px-2 py-1"
               value={allSort}
-              onChange={(e) => setAllSort(e.target.value as "dateAsc" | "dateDesc")}
+              onChange={(e) =>
+                setAllSort(
+                  e.target.value as "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
+                )
+              }
             >
-              <option value="dateAsc">Oldest ↑</option>
-              <option value="dateDesc">Newest ↓</option>
+              <option value="relevance">Relevance</option>
+              <option value="titleAsc">Title A → Z</option>
+              <option value="titleDesc">Title Z → A</option>
+              <option value="dateDesc">Date Newest → Oldest</option>
+              <option value="dateAsc">Date Oldest → Newest</option>
             </select>
           </label>
+
           <p className="text-sm text-gray-500">
-            (Showing 5 from MET + 5 from Harvard on each page.)
+            (Showing 10 from MET + 10 from Harvard on each page.)
           </p>
         </div>
       )}
 
-      {/* ─── Loading / Error / Empty ─── */}
+      {/* Loading / Error / Empty  */}
       {loading && <p>Loading…</p>}
       {error && <p className="text-red-600">Error: {error.message}</p>}
       {!loading && artworks.length === 0 && <p>No artworks found.</p>}
 
-      {/* ─── Results ─── */}
+      {/* Results  */}
       <div className="p-4">
-        {/* Replace your inline loop with: */}
         {artworks.map((art: CombinedArtwork) => (
-          <ArtworkCard key={art.id} artwork={art} />
+          <ArtworkCard key={`${art.source}-${art.id}`} artwork={art} />
         ))}
       </div>
 
-      {/* ─── Pagination (5 buttons at a time) ─── */}
+      {/* Pagination Controls  */}
       <div className="mt-6 flex justify-center items-center flex-wrap gap-2">
-        {/* Prev */}
         <button
           onClick={handlePrev}
           disabled={page === 0}
@@ -379,7 +435,6 @@ export default function ArtworkListPage() {
             </button>
           ));
         })()}
-        {/* Next */}
         <button
           onClick={handleNext}
           disabled={page + 1 >= totalPages}
