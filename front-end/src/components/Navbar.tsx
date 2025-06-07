@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 
+import { RxAvatar } from "react-icons/rx";
+
 interface NavBarProps {
   onOpenLogin: () => void;
   onOpenRegister: () => void;
@@ -19,12 +21,14 @@ export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
         {isAuthenticated ? (
           <>
             {/* Show avatar if present */}
-            {currentUser?.profileImageUrl && (
+            {currentUser?.profileImageUrl ? (
               <img
                 src={currentUser.profileImageUrl}
                 alt={currentUser.username}
                 className="w-8 h-8 rounded-full object-cover border border-gray-300"
               />
+            ) : (
+              <RxAvatar className="w-8 h-8 text-gray-500" />
             )}
             <span className="font-medium text-gray-700">{currentUser?.username}</span>
 

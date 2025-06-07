@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, setAuthToken } from "../services/apiClient";
@@ -21,18 +21,37 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>("");
+
   const queryClient = useQueryClient();
   const { login } = useAuth();
 
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(avatarFile);
+    setAvatarPreview(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [avatarFile]);
+
   const registerMutation = useMutation<RegisterResponse, Error, void>({
     mutationFn: async () => {
-      const response = await apiClient.post<RegisterResponse>("/auth/register", {
-        username,
-        password,
-        profileImageUrl: profileImageUrl.trim() || undefined,
+      const form = new FormData();
+      form.append("username", username);
+      form.append("password", password);
+      if (avatarFile) {
+        form.append("avatar", avatarFile);
+      }
+
+      const res = await apiClient.post<RegisterResponse>("/auth/register", form, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      return response.data;
+      return res.data;
     },
     onSuccess: (data) => {
       const { user, token } = data;
@@ -96,15 +115,21 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Profile Image URL (optional)
+            Upload Avatar (optional)
           </label>
           <input
-            type="text"
-            value={profileImageUrl}
-            onChange={(e) => setProfileImageUrl(e.target.value)}
-            placeholder="https://example.com/avatar.jpg"
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500 bg-white text-gray-800"
+            type="file"
+            accept="image/*"
+            onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-gray-700"
           />
+          {avatarPreview && (
+            <img
+              src={avatarPreview}
+              alt="Preview"
+              className="mt-2 w-16 h-16 rounded-full object-cover border"
+            />
+          )}
         </div>
 
         <button
