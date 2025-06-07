@@ -61,15 +61,6 @@ export default function App() {
       </Routes>
       {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
       {showRegisterModal && <RegisterModal onClose={() => setShowRegisterModal(false)} />}
-      <Footer />
     </BrowserRouter>
   );
-  function Footer() {
-    const { isAuthenticated, currentUser } = useAuth();
-    return (
-      <footer style={{ marginTop: 20, fontSize: 12, textAlign: "center" }}>
-        {isAuthenticated ? `Logged in as ${currentUser?.username}` : "Not logged in"}
-      </footer>
-    );
-  }
 }

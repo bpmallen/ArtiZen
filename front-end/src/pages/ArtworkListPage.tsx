@@ -115,11 +115,7 @@ export default function ArtworkListPage() {
 
   return (
     <div className="bg-offwhite min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-4xl font-heading font-semibold text-text mb-6">
-          Exhibition Curation Platform
-        </h1>
-
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* ─── Tabs ─── */}
         <div className="flex space-x-6 mb-8 border-b border-text-light">
           {(["met", "harvard", "all"] as TabType[]).map((t) => (
@@ -148,9 +144,9 @@ export default function ArtworkListPage() {
             <h2 className="font-heading font-medium text-text mb-4">MET Filters</h2>
 
             {/* Search */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               <input
-                className="flex-grow border border-text-light rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="flex-grow border border-text-light rounded-l-lg max-w-4xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Search MET…"
                 value={metInput}
                 onChange={(e) => setMetInput(e.target.value)}
@@ -181,7 +177,7 @@ export default function ArtworkListPage() {
               <label className="block">
                 Department:
                 <select
-                  className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="mt-1 w-full border max-w-xs  border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   value={typeof metFilters.departmentId === "number" ? metFilters.departmentId : ""}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -203,7 +199,7 @@ export default function ArtworkListPage() {
               <label className="block">
                 Geographic Location:
                 <select
-                  className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="mt-1 w-full border max-w-xs border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   value={metFilters.geoLocation ?? ""}
                   onChange={(e) =>
                     setMetFilters((f) => ({
@@ -228,7 +224,7 @@ export default function ArtworkListPage() {
               <label className="block">
                 Date / Era:
                 <select
-                  className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="mt-1 w-full border max-w-3xs border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   value={
                     metFilters.dateBegin != null && metFilters.dateEnd != null
                       ? `${metFilters.dateBegin}-${metFilters.dateEnd}`
@@ -257,7 +253,7 @@ export default function ArtworkListPage() {
                 Medium:
                 <input
                   type="text"
-                  className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="mt-1 w-full border max-w-3xs border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="e.g. Sculpture"
                   onChange={(e) =>
                     setMetFilters((f) => ({
@@ -271,7 +267,7 @@ export default function ArtworkListPage() {
               <label className="block">
                 Sort by:
                 <select
-                  className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="mt-1 w-full border max-w-3xs border-text-light rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   value={metSort}
                   onChange={(e) =>
                     setMetSort(
