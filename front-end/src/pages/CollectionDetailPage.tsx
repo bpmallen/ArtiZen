@@ -211,22 +211,25 @@ export default function CollectionDetailPage() {
                 : (details as HarvardDetail).dated;
 
             return (
-              <div key={`${item.source}-${item.artworkId}`} className="flex items-center …">
+              <div key={`${item.source}-${item.artworkId}`} className="flex items-center gap-4">
                 {imgSrc ? (
-                  <img src={imgSrc} alt={title} className="w-16 h-16 object-cover rounded" />
+                  <img src={imgSrc} alt={title} className="w-16 h-16 rounded object-cover" />
                 ) : (
                   <div className="w-16 h-16 flex items-center justify-center rounded bg-gray-100">
                     <CiImageOn size={24} className="text-gray-400" />
                   </div>
                 )}
-
-                <div className="ml-4">
-                  <div className="font-medium">{title}</div>
+                <div className="ml-4 flex-1">
+                  <Link
+                    to={`/artwork/${item.source}/${item.artworkId}`}
+                    className="font-medium hover:underline"
+                  >
+                    {title}
+                  </Link>
                   <div className="text-sm text-gray-600">
                     {date ?? "n.d."} <span className="italic">({item.source.toUpperCase()})</span>
                   </div>
                 </div>
-
                 <button
                   onClick={() =>
                     removeMutation.mutate({ artworkId: item.artworkId, source: item.source })
