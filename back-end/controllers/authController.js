@@ -11,12 +11,10 @@ export const register = async (req, res, next) => {
     }
 
     let profileImageUrl = "";
-    if (req.file) {
-      const host = req.get("host");
-      const proto = req.protocol;
-      profileImageUrl = `${proto}://${host}/uploads/${req.file.filename}`;
+    if (req.file && req.file.path) {
+      profileImageUrl = req.file.path; // ← Cloudinary HTTPS URL
     } else if (req.body.profileImageUrl) {
-      profileImageUrl = req.body.profileImageUrl;
+      profileImageUrl = req.body.profileImageUrl; // fallback if they pasted a URL
     }
 
     const existing = await User.findOne({ username });
