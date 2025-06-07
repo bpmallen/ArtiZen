@@ -12,7 +12,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <App />
+        <div className="min-h-screen bg-vintage text-text">
+          <App />
+        </div>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>

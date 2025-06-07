@@ -14,7 +14,7 @@ export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
   return (
     <nav className="flex items-center justify-between p-4 bg-gray-100">
       <Link to="/" className="text-xl font-bold text-gray-800">
-        Exhibition Curator
+        ArtiZen
       </Link>
 
       <div className="flex items-center gap-4">
