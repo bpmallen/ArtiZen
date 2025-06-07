@@ -10,16 +10,14 @@ import {
 import { apiClient } from "../services/apiClient";
 import { fetchMetById, fetchHarvardById } from "../services/artworkDetails";
 import { useState } from "react";
+import type { MetDetail, HarvardDetail } from "../services/artworkDetails";
+
+import { CiImageOn } from "react-icons/ci";
+import { ImBin } from "react-icons/im";
 
 interface RemoveItemArgs {
   artworkId: string;
   source: "met" | "harvard";
-}
-
-interface ArtworkDetails {
-  primaryImageSmall: string;
-  title: string;
-  date: number | string;
 }
 
 export default function CollectionDetailPage() {
@@ -33,17 +31,16 @@ export default function CollectionDetailPage() {
   const collection = collections.find((c) => c.name === collectionName);
 
   // Prepare a an array of items (even if collection is undefined)
-  const items = collection ? collection.items : [];
+  const items = collection?.items ?? [];
 
-  // useQueries must be called unconditionally. If `items` is empty, queries: [].
-  const detailQueries: UseQueryResult<ArtworkDetails, Error>[] = useQueries({
+  const detailQueries = useQueries({
     queries: items.map((item) => ({
-      queryKey: [item.source, item.artworkId],
-      queryFn: (): Promise<ArtworkDetails> =>
+      queryKey: [item.source, item.artworkId] as const,
+      queryFn: () =>
         item.source === "met" ? fetchMetById(item.artworkId) : fetchHarvardById(item.artworkId),
       staleTime: Infinity,
     })),
-  });
+  }) as UseQueryResult<MetDetail | HarvardDetail, Error>[];
 
   // Mutation to remove an item from this collection
   const removeMutation = useMutation<void, Error, RemoveItemArgs>({
@@ -183,45 +180,60 @@ export default function CollectionDetailPage() {
       ) : (
         <div className="space-y-4">
           {items.map((item, idx) => {
-            const { data: details, isLoading: isDetailsLoading } = detailQueries[idx];
+            const { data: details, isLoading } = detailQueries[idx];
+
+            // If we haven’t loaded yet, show a skeleton:
+            if (isLoading || !details) {
+              return (
+                <div key={`${item.source}-${item.artworkId}`} className="flex items-center …">
+                  <div className="w-16 h-16 bg-gray-200 animate-pulse rounded" />
+                  <div className="ml-4">
+                    <div className="h-4 w-24 bg-gray-200 animate-pulse mb-1 rounded" />
+                    <div className="h-3 w-16 bg-gray-200 animate-pulse rounded" />
+                  </div>
+                </div>
+              );
+            }
+
+            // Now that we have `details`, pick the right fields:
+            const imgSrc =
+              item.source === "met"
+                ? (details as MetDetail).primaryImageSmall
+                : (details as HarvardDetail).primaryimageurl;
+
+            const title =
+              details.title ?? // both have `.title`
+              "Untitled";
+
+            const date =
+              item.source === "met"
+                ? (details as MetDetail).objectDate
+                : (details as HarvardDetail).dated;
 
             return (
-              <div
-                key={`${item.source}-${item.artworkId}`}
-                className="flex items-center justify-between border p-3 rounded"
-              >
-                <div className="flex items-center gap-3">
-                  {isDetailsLoading || !details ? (
-                    <div className="w-16 h-16 bg-gray-200 animate-pulse rounded" />
-                  ) : (
-                    <img
-                      src={details.primaryImageSmall}
-                      alt={details.title}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                  )}
+              <div key={`${item.source}-${item.artworkId}`} className="flex items-center …">
+                {imgSrc ? (
+                  <img src={imgSrc} alt={title} className="w-16 h-16 object-cover rounded" />
+                ) : (
+                  <div className="w-16 h-16 flex items-center justify-center rounded bg-gray-100">
+                    <CiImageOn size={24} className="text-gray-400" />
+                  </div>
+                )}
 
-                  <div>
-                    <div className="font-medium">
-                      {isDetailsLoading || !details ? "Loading…" : details.title}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {isDetailsLoading || !details ? "" : details.date ?? "n.d."}{" "}
-                      <span className="italic">({item.source.toUpperCase()})</span>
-                    </div>
+                <div className="ml-4">
+                  <div className="font-medium">{title}</div>
+                  <div className="text-sm text-gray-600">
+                    {date ?? "n.d."} <span className="italic">({item.source.toUpperCase()})</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() =>
-                    removeMutation.mutate({
-                      artworkId: item.artworkId,
-                      source: item.source,
-                    })
+                    removeMutation.mutate({ artworkId: item.artworkId, source: item.source })
                   }
-                  className="text-red-500 hover:text-red-700 text-sm"
+                  className="ml-auto text-red-500 hover:text-red-700"
                 >
-                  Remove
+                  <ImBin />
                 </button>
               </div>
             );
