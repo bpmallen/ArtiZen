@@ -4,6 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, setAuthToken } from "../services/apiClient";
 import { useAuth } from "../contexts/useAuth";
 
+import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
+
 interface BackendUser {
   _id: string;
   username: string;
@@ -83,10 +85,10 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-800 focus:outline-none"
-              style={{ top: "50%", transform: "translateY(-50%)" }}
+              className="absolute inset-y-0 right-0 px10 flex items-center  focus:outline-none"
+              // style={{ top: "50%", transform: "translateY(-50%)" }}
             >
-              {showPassword ? "Hide" : "Show"}
+              {showPassword ? <IoEyeOffOutline size={20} /> : <IoEyeOutline size={20} />}
             </button>
           </div>
         </div>
