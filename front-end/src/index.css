@@ -1,1 +1,47 @@
 @import "tailwindcss";
+
+@layer base {
+  .font-heading {
+    font-family: "Playfair Display", serif;
+  }
+}
+
+@layer utilities {
+  .bg-offwhite {
+    background-color: #f9f3e7;
+  }
+  .bg-vintage {
+    background-color: #f8ebd7;
+  }
+
+  /* Fade-in-up */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
+  }
+
+  /* Left→right shimmer skeleton */
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  .skeleton {
+    background-color: #e2e8f0;
+    background-image: linear-gradient(to right, #e2e8f0 0%, #f1f5f9 20%, #e2e8f0 40%, #e2e8f0 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+}

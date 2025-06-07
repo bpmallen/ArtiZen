@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { CombinedArtwork, HarvardFilters } from "../types/artwork";
 import { fetchHarvardPage } from "../services/harvardArtMuseumApi";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 30;
 
 export function useHarvardArtworks(
   searchTerm: string,

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { fetchMetPageSlim } from "../services/metSlim";
 import type { CombinedArtwork, MetFilters } from "../types/artwork";
 
-const ARTWORKS_PER_PAGE = 10;
+const ARTWORKS_PER_PAGE = 30;
 
 export function useMetArtworks(
   searchTerm: string,

@@ -13,7 +13,11 @@ export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
 
   return (
     <nav className="flex items-center justify-between p-4 bg-gray-100">
-      <Link to="/" className="text-xl font-bold text-gray-800">
+      <Link
+        to="/"
+        className="text-xl font-heading font-bold text-gray-800"
+        // style={{ fontFamily: '"Playfair Display", serif' }}
+      >
         ArtiZen
       </Link>
 
