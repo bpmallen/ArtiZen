@@ -91,7 +91,9 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
             required
           />
           <p className="mt-1 text-sm">
-            <span className={usernameValid ? "text-green-500" : "text-red-500"}>
+            <span
+              className={usernameValid ? "text-green-500 font-roboto" : "text-red-500 font-roboto"}
+            >
               {usernameValid ? "✔" : "✖"} Username must be at least 3 characters
             </span>
           </p>
@@ -106,7 +108,7 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Choose a password"
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500 bg-white text-gray-800"
+              className="w-full border font-roboto border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500 bg-white text-gray-800"
               required
             />
             <button
@@ -118,10 +120,18 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
             </button>
           </div>
           <div className="mt-1 space-y-1 text-sm">
-            <p className={passwordLengthValid ? "text-green-500" : "text-red-500"}>
+            <p
+              className={
+                passwordLengthValid ? "text-green-500 font-roboto" : "text-red-500 font-roboto"
+              }
+            >
               {passwordLengthValid ? "✔" : "✖"} At least 6 characters
             </p>
-            <p className={passwordNumberValid ? "text-green-500" : "text-red-500"}>
+            <p
+              className={
+                passwordNumberValid ? "text-green-500 font-roboto" : "text-red-500 font-roboto"
+              }
+            >
               {passwordNumberValid ? "✔" : "✖"} Contains at least one number
             </p>
           </div>
@@ -156,7 +166,7 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
             !passwordLengthValid ||
             !passwordNumberValid
           }
-          className={`w-full py-2 rounded text-white ${
+          className={`w-full py-2 rounded text-white font-roboto ${
             registerMutation.status === "pending" ||
             !usernameValid ||
             !passwordLengthValid ||
@@ -169,7 +179,7 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
         </button>
 
         {/* Server Error */}
-        {serverError && <p className="mt-2 text-sm text-red-500">{serverError}</p>}
+        {serverError && <p className="mt-2 text-sm text-red-500 font-roboto">{serverError}</p>}
       </form>
     </Modal>
   );

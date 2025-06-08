@@ -1,5 +1,3 @@
-// front-end/src/components/CreateCollectionModal.tsx
-
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "../contexts/useAuth";
 import { useCollections } from "../hooks/useCollections";
@@ -17,48 +15,33 @@ export default function CreateCollectionModal({ artwork, close }: CreateCollecti
   const { currentUser } = useAuth();
   const qc = useQueryClient();
 
-  // Fetch existing collections
   const { data, isLoading } = useCollections();
-
-  // Memoize the `collections` array so it only changes when `data` changes
   const collections = useMemo(() => data ?? [], [data]);
 
-  //  State for selected existing collection and new-collection name
   const [selected, setSelected] = useState<string>("");
   const [newName, setNewName] = useState("");
 
-  //  Mutation: save to existing collection
   const saveToExistingMutation = useMutation<AxiosResponse, Error, string>({
-    mutationFn: async (collectionName) => {
-      return await apiClient.post(
-        `/users/${currentUser!._id}/collections/${collectionName}/items`,
-        {
-          artworkId: artwork.id,
-          source: artwork.source,
-        }
-      );
-    },
+    mutationFn: (collectionName) =>
+      apiClient.post(`/users/${currentUser!._id}/collections/${collectionName}/items`, {
+        artworkId: artwork.id,
+        source: artwork.source,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["collections", currentUser!._id] });
       close();
     },
   });
 
-  //  Mutation: create a new collection, then save
   const createAndSaveMutation = useMutation<AxiosResponse, Error, string>({
     mutationFn: async (collectionName) => {
-      //  Create the new collection
       await apiClient.post(`/users/${currentUser!._id}/collections`, {
         name: collectionName,
       });
-      //  Then add the artwork to it
-      return await apiClient.post(
-        `/users/${currentUser!._id}/collections/${collectionName}/items`,
-        {
-          artworkId: artwork.id,
-          source: artwork.source,
-        }
-      );
+      return apiClient.post(`/users/${currentUser!._id}/collections/${collectionName}/items`, {
+        artworkId: artwork.id,
+        source: artwork.source,
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["collections", currentUser!._id] });
@@ -66,7 +49,6 @@ export default function CreateCollectionModal({ artwork, close }: CreateCollecti
     },
   });
 
-  // Pre-select the first existing collection once `collections` is loaded
   useEffect(() => {
     if (!isLoading && collections.length > 0) {
       setSelected(collections[0].name);
@@ -75,10 +57,13 @@ export default function CreateCollectionModal({ artwork, close }: CreateCollecti
 
   if (isLoading) {
     return (
-      <div style={overlayStyles}>
-        <div style={modalStyles}>
-          <p className="text-center py-4">Loading collections…</p>
-          <button onClick={close} className="mt-4 px-4 py-2 bg-gray-200 rounded">
+      <div className="fixed inset-0 bg-gray-800/80 flex items-center justify-center z-50">
+        <div className="bg-gray-900 rounded-lg p-6 w-80 max-h-[80vh] overflow-auto">
+          <p className="text-center py-4 text-white">Loading collections…</p>
+          <button
+            onClick={close}
+            className="mt-4 w-full px-4 py-2 bg-red-400 hover:bg-red-500 text-white rounded"
+          >
             Cancel
           </button>
         </div>
@@ -87,19 +72,19 @@ export default function CreateCollectionModal({ artwork, close }: CreateCollecti
   }
 
   return (
-    <div style={overlayStyles}>
-      <div style={modalStyles} className="bg-white rounded p-6 w-80 max-h-[80vh] overflow-auto">
-        <h3 className="text-lg font-semibold mb-4 text-black">
+    <div className="fixed inset-0 bg-gray-800/80 flex items-center justify-center z-50">
+      <div className="bg-gray-900 rounded-lg p-6 w-80 max-h-[80vh] overflow-auto">
+        <h3 className="text-lg font-semibold mb-4 text-white">
           Save “{artwork.title}” to a Collection
         </h3>
 
-        {/* Dropdown of existing collections */}
+        {/* Existing */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 text-black">Choose an existing:</label>
+          <label className="block text-sm font-medium mb-1 text-white">Choose an existing:</label>
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="w-full border border-gray-400 rounded px-2 py-1 bg-gray-100 text-gray-900 focus:border-blue-500 focus:outline-none"
+            className="w-full border border-gray-700 rounded px-2 py-1 bg-gray-800 text-white focus:border-blue-400 outline-none"
           >
             {collections.map((col) => (
               <option key={col.name} value={col.name}>
@@ -111,22 +96,22 @@ export default function CreateCollectionModal({ artwork, close }: CreateCollecti
             disabled={!selected}
             onClick={() => saveToExistingMutation.mutate(selected)}
             className={`mt-2 w-full px-4 py-2 rounded text-white ${
-              selected ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-300 cursor-not-allowed"
+              selected ? "bg-blue-400 hover:bg-blue-500" : "bg-gray-700 cursor-not-allowed"
             }`}
           >
             Save to “{selected}”
           </button>
         </div>
 
-        <hr className="my-4" />
+        <hr className="border-gray-700 my-4" />
 
-        {/* Input for creating a new collection */}
+        {/* New */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Or create new:</label>
+          <label className="block text-sm font-medium mb-1 text-white">Or create new:</label>
           <input
             type="text"
             placeholder="New collection name"
-            className="w-full border border-gray-400 rounded px-2 py-1 mb-2 bg-gray-100 text-gray-900 focus:border-blue-500"
+            className="w-full border border-gray-700 rounded px-2 py-1 mb-2 bg-gray-800 text-white focus:border-green-400 outline-none"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
           />
@@ -134,17 +119,17 @@ export default function CreateCollectionModal({ artwork, close }: CreateCollecti
             disabled={!newName.trim()}
             onClick={() => createAndSaveMutation.mutate(newName.trim())}
             className={`w-full px-4 py-2 rounded text-white ${
-              newName.trim() ? "bg-green-600 hover:bg-green-700" : "bg-gray-300 cursor-not-allowed"
+              newName.trim() ? "bg-green-400 hover:bg-green-500" : "bg-gray-700 cursor-not-allowed"
             }`}
           >
-            Create & Save
+            Create &amp; Save
           </button>
         </div>
 
-        {/* Cancel button */}
+        {/* Cancel */}
         <button
           onClick={close}
-          className="mt-2 w-full px-4 py-2 border border-gray-300 rounded hover:bg-gray-100"
+          className="mt-2 w-full px-4 py-2 bg-red-400 hover:bg-red-500 text-white rounded"
         >
           Cancel
         </button>
@@ -152,23 +137,3 @@ export default function CreateCollectionModal({ artwork, close }: CreateCollecti
     </div>
   );
 }
-
-// Overlay (semi-transparent backdrop) styles
-const overlayStyles: React.CSSProperties = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: "rgba(0, 0, 0, 0.4)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 1000,
-};
-
-// Modal container styles
-const modalStyles: React.CSSProperties = {
-  maxWidth: "320px",
-  width: "100%",
-};

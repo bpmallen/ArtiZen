@@ -50,7 +50,7 @@ export default function CollectionsPage() {
         {/* Back */}
         <div className="mb-2 text-center">
           <Link to="/" className="text-slate-400 hover:text-slate-200">
-            ← Back to Home
+            ← Back to Gallery
           </Link>
         </div>
 
