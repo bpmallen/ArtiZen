@@ -58,55 +58,70 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal onClose={onClose}>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-5">Log In</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Username */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2"
-            required
-          />
-        </div>
-
-        {/* Password with toggle */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <div className="relative">
+      <div className="bg-white p-6 rounded-lg w-80 mx-auto font-roboto text-black">
+        <h2 className="text-2xl font-semibold mb-5">Log In</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Username */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Username</label>
             <input
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 bg-white text-black placeholder-gray-500 focus:border-blue-600 outline-none"
+              placeholder="Enter username"
               required
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-0 px-3 flex items-center"
-            >
-              {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
-            </button>
           </div>
-        </div>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full py-2 rounded text-white ${
-            loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {loading ? "Logging in…" : "Log In"}
-        </button>
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 bg-white text-black placeholder-gray-500 focus:border-blue-600 outline-none"
+                placeholder="Enter password"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500"
+              >
+                {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
+              </button>
+            </div>
+          </div>
 
-        {/* Inline server error */}
-        {serverError && <p className="mt-2 text-sm text-red-500">{serverError}</p>}
-      </form>
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full py-2 rounded font-medium ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            {loading ? "Logging in…" : "Log In"}
+          </button>
+
+          {/* Inline server error */}
+          {serverError && <p className="mt-2 text-sm text-red-600">{serverError}</p>}
+
+          {/* Cancel */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full mt-2 py-2 rounded bg-red-600 hover:bg-red-700 text-white font-medium"
+          >
+            Cancel
+          </button>
+        </form>
+      </div>
     </Modal>
   );
 }

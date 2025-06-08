@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { apiClient, setAuthToken } from "../services/apiClient";
 import { useAuth } from "../contexts/useAuth";
-import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
+import { IoEyeOutline, IoEyeOffOutline, IoCameraOutline } from "react-icons/io5";
 
 interface BackendUser {
   _id: string;
@@ -139,22 +139,34 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
 
         {/* Avatar */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Upload Avatar (optional)
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-gray-700"
-          />
-          {avatarPreview && (
-            <img
-              src={avatarPreview}
-              alt="Preview"
-              className="mt-2 w-16 h-16 rounded-full object-cover border"
+          <label className="block text-sm font-medium mb-1">Upload Avatar (optional)</label>
+          <div className="flex items-center space-x-4">
+            {avatarPreview ? (
+              <img
+                src={avatarPreview}
+                alt="Preview"
+                className="w-16 h-16 rounded-full object-cover border"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                <IoCameraOutline className="w-6 h-6 text-gray-500" />
+              </div>
+            )}
+            <label
+              htmlFor="avatar-upload"
+              className="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+            >
+              <IoCameraOutline />
+              <span className="underline">Choose File</span>
+            </label>
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
             />
-          )}
+          </div>
         </div>
 
         {/* Submit */}

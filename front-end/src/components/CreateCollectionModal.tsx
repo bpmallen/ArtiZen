@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../services/apiClient";
 import type { CombinedArtwork } from "../types/artwork";
 import type { AxiosResponse } from "axios";
+import Modal from "./Modal";
 
 interface CreateCollectionModalProps {
   artwork: CombinedArtwork;
@@ -72,68 +73,82 @@ export default function CreateCollectionModal({ artwork, close }: CreateCollecti
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-800/80 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-lg p-6 w-80 max-h-[80vh] overflow-auto">
-        <h3 className="text-lg font-semibold mb-4 text-white">
-          Save “{artwork.title}” to a Collection
-        </h3>
+    <Modal onClose={close}>
+      <div className="bg-white p-6 rounded-lg w-80 mx-auto font-roboto text-black">
+        {isLoading ? (
+          <>
+            <p className="text-center py-4">Loading collections…</p>
+            <button
+              onClick={close}
+              className="w-full mt-4 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <h3 className="text-lg font-semibold mb-4">Save “{artwork.title}” to a Collection</h3>
 
-        {/* Existing */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 text-white">Choose an existing:</label>
-          <select
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-            className="w-full border border-gray-700 rounded px-2 py-1 bg-gray-800 text-white focus:border-blue-400 outline-none"
-          >
-            {collections.map((col) => (
-              <option key={col.name} value={col.name}>
-                {col.name} ({col.items.length} items)
-              </option>
-            ))}
-          </select>
-          <button
-            disabled={!selected}
-            onClick={() => saveToExistingMutation.mutate(selected)}
-            className={`mt-2 w-full px-4 py-2 rounded text-white ${
-              selected ? "bg-blue-400 hover:bg-blue-500" : "bg-gray-700 cursor-not-allowed"
-            }`}
-          >
-            Save to “{selected}”
-          </button>
-        </div>
+            {/* Existing */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Choose an existing:</label>
+              <select
+                value={selected}
+                onChange={(e) => setSelected(e.target.value)}
+                className="w-full border border-gray-300 rounded px-2 py-1 bg-white text-black focus:border-blue-600 outline-none"
+              >
+                {collections.map((col) => (
+                  <option key={col.name} value={col.name}>
+                    {col.name} ({col.items.length} items)
+                  </option>
+                ))}
+              </select>
+              <button
+                disabled={!selected}
+                onClick={() => saveToExistingMutation.mutate(selected)}
+                className={`w-full mt-2 py-2 rounded text-white ${
+                  selected ? "bg-blue-600 hover:bg-blue-700" : "bg-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Save to “{selected}”
+              </button>
+            </div>
 
-        <hr className="border-gray-700 my-4" />
+            <hr className="border-gray-300 my-4" />
 
-        {/* New */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1 text-white">Or create new:</label>
-          <input
-            type="text"
-            placeholder="New collection name"
-            className="w-full border border-gray-700 rounded px-2 py-1 mb-2 bg-gray-800 text-white focus:border-green-400 outline-none"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
-          <button
-            disabled={!newName.trim()}
-            onClick={() => createAndSaveMutation.mutate(newName.trim())}
-            className={`w-full px-4 py-2 rounded text-white ${
-              newName.trim() ? "bg-green-400 hover:bg-green-500" : "bg-gray-700 cursor-not-allowed"
-            }`}
-          >
-            Create &amp; Save
-          </button>
-        </div>
+            {/* New */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Or create new:</label>
+              <input
+                type="text"
+                placeholder="New collection name"
+                className="w-full border border-gray-300 rounded px-2 py-1 mb-2 bg-white text-black focus:border-green-600 outline-none"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+              />
+              <button
+                disabled={!newName.trim()}
+                onClick={() => createAndSaveMutation.mutate(newName.trim())}
+                className={`w-full py-2 rounded text-white ${
+                  newName.trim()
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Create &amp; Save
+              </button>
+            </div>
 
-        {/* Cancel */}
-        <button
-          onClick={close}
-          className="mt-2 w-full px-4 py-2 bg-red-400 hover:bg-red-500 text-white rounded"
-        >
-          Cancel
-        </button>
+            {/* Cancel */}
+            <button
+              onClick={close}
+              className="w-full py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+            >
+              Cancel
+            </button>
+          </>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }

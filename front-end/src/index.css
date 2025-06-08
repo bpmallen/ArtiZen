@@ -3,6 +3,8 @@
 @layer base {
   body {
     font-family: "Playfair Display", serif;
+    background-color: theme("colors.black");
+    color: theme("colors.white");
   }
 
   .font-body {
@@ -25,6 +27,7 @@
     font-family: "Roboto", system-ui, sans-serif;
   }
 }
+
 .swiper-pagination {
   position: relative !important;
   bottom: auto !important;
@@ -34,4 +37,22 @@
 .swiper-wrapper {
   padding-left: 4rem;
   padding-right: 4rem;
+}
+@layer utilities {
+  .bg-black {
+    --tw-bg-opacity: 1 !important;
+    background-color: rgba(17, 17, 17, var(--tw-bg-opacity)) !important;
+  }
+  .text-black {
+    --tw-text-opacity: 1 !important;
+    color: rgba(17, 17, 17, var(--tw-text-opacity)) !important;
+  }
+  .bg-white {
+    --tw-bg-opacity: 1 !important;
+    background-color: rgba(250, 250, 250, var(--tw-bg-opacity)) !important;
+  }
+  .text-white {
+    --tw-text-opacity: 1 !important;
+    color: rgba(250, 250, 250, var(--tw-text-opacity)) !important;
+  }
 }
