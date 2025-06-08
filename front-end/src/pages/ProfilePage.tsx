@@ -22,8 +22,8 @@ export default function ProfilePage() {
     },
     onSuccess: (data) => {
       setCurrentUser(data.user);
-
       qc.invalidateQueries({ queryKey: ["user", data.user._id] });
+      alert("Profile image updated!");
     },
   });
 
