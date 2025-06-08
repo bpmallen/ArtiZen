@@ -15,7 +15,7 @@ import ArtworkCard from "../components/ArtworkCard";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y } from "swiper/modules";
-import type { NavigationOptions } from "swiper/modules/navigation";
+import type { NavigationOptions } from "swiper/types";
 import { assetUrl } from "../cloudinary";
 
 const bgImage = assetUrl("chris-czermak-PamFFHL6fVY-unsplash_onknte", "1749423015", "jpg");
@@ -154,12 +154,12 @@ export default function CollectionDetailPage() {
           slidesPerView={1}
           autoHeight
           onBeforeInit={(swiper) => {
-            if (swiper.params.navigation) {
-              swiper.params.navigation.prevEl = prevRef.current!;
-              swiper.params.navigation.nextEl = nextRef.current!;
-              swiper.navigation.init();
-              swiper.navigation.update();
-            }
+            // force TS to treat navigation as your object
+            const nav = swiper.params.navigation as NavigationOptions;
+            nav.prevEl = prevRef.current!;
+            nav.nextEl = nextRef.current!;
+            swiper.navigation.init();
+            swiper.navigation.update();
           }}
           navigation={navOptions}
           pagination={{ clickable: true }}
