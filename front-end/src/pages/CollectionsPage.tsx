@@ -6,7 +6,13 @@ import { apiClient } from "../services/apiClient";
 import type { Collection } from "../types/collection";
 import { Link, Outlet } from "react-router-dom";
 import { ImBin } from "react-icons/im";
-import bgImage from "../assets/B0E4BFC1-D817-4C61-8485-AEE206345312_1_201_a.jpeg";
+import { assetUrl } from "../cloudinary";
+
+const bgImage = assetUrl(
+  "B0E4BFC1-D817-4C61-8485-AEE206345312_1_201_a_t0xn6e",
+  "1749423015",
+  "jpg"
+);
 
 export default function CollectionsPage() {
   const { currentUser } = useAuth();

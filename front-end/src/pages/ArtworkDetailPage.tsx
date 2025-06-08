@@ -10,7 +10,9 @@ import {
   fetchHarvardById,
   type HarvardDetail,
 } from "../services/artworkDetails";
-import bgImage from "../assets/adrianna-geo-1rBg5YSi00c-unsplash.jpg";
+import { assetUrl } from "../cloudinary";
+const bgImage = assetUrl("adrianna-geo-1rBg5YSi00c-unsplash_mutow7", "1749423015", "jpg");
+console.log("bgImage →", bgImage);
 
 export default function ArtworkDetailPage() {
   const { source, artworkId } = useParams<{

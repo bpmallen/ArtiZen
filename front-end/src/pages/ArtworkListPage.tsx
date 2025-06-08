@@ -5,7 +5,9 @@ import { useMetArtworks } from "../hooks/useMetArtworks";
 import { useHarvardArtworks } from "../hooks/useHarvardArtworks";
 import ArtworkCard from "../components/ArtworkCard";
 import Sidebar from "../components/Sidebar";
-import bgImage from "../assets/jack-hunter-1L4E_lsIb9Q-unsplash.jpg";
+import { assetUrl } from "../cloudinary";
+
+const bgImage = assetUrl("jack-hunter-1L4E_lsIb9Q-unsplash_oycu7r", "1749423015", "jpg");
 
 export default function ArtworkListPage() {
   type TabType = "met" | "harvard" | "all";

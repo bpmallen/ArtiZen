@@ -16,7 +16,9 @@ import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y } from "swiper/modules";
 import type { NavigationOptions } from "swiper/modules/navigation";
-import bgImage from "../assets/chris-czermak-PamFFHL6fVY-unsplash.jpg";
+import { assetUrl } from "../cloudinary";
+
+const bgImage = assetUrl("chris-czermak-PamFFHL6fVY-unsplash_onknte", "1749423015", "jpg");
 
 import "swiper/css";
 import "swiper/css/navigation";
