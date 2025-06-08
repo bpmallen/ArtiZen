@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import Modal from "./Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { AxiosError } from "axios";
 import { apiClient, setAuthToken } from "../services/apiClient";
 import { useAuth } from "../contexts/useAuth";
-
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
 
 interface BackendUser {
@@ -20,9 +20,14 @@ interface RegisterResponse {
 export default function RegisterModal({ onClose }: { onClose: () => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string>("");
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string>("");
+
+  const usernameValid = username.length >= 3;
+  const passwordLengthValid = password.length >= 6;
+  const passwordNumberValid = /\d/.test(password);
 
   const queryClient = useQueryClient();
   const { login } = useAuth();
@@ -34,51 +39,47 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
     }
     const url = URL.createObjectURL(avatarFile);
     setAvatarPreview(url);
-    return () => {
-      URL.revokeObjectURL(url);
-    };
+    return () => URL.revokeObjectURL(url);
   }, [avatarFile]);
 
-  const registerMutation = useMutation<RegisterResponse, Error, void>({
+  const registerMutation = useMutation<RegisterResponse, AxiosError<{ message: string }>, void>({
     mutationFn: async () => {
       const form = new FormData();
       form.append("username", username);
       form.append("password", password);
-      if (avatarFile) {
-        form.append("avatar", avatarFile);
-      }
+      if (avatarFile) form.append("avatar", avatarFile);
 
       const res = await apiClient.post<RegisterResponse>("/auth/register", form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return res.data;
     },
-    onSuccess: (data) => {
-      const { user, token } = data;
+    onSuccess: ({ user, token }) => {
       localStorage.setItem("token", token);
       setAuthToken(token);
       login(token, user);
+
       queryClient.invalidateQueries({ queryKey: ["collections", user._id] });
       onClose();
     },
     onError: (err) => {
-      console.error("Registration failed:", err);
-      alert("Registration failed. Try another username.");
+      const msg = err.response?.data?.message ?? err.message;
+      alert(msg);
+      setServerError(msg);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError("");
     registerMutation.mutate();
   };
-
-  const loading = registerMutation.status === "pending";
-  const error = registerMutation.status === "error";
 
   return (
     <Modal onClose={onClose}>
       <h2 className="text-2xl font-semibold text-gray-800 mb-5">Register</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Username */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
           <input
@@ -89,8 +90,14 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
             className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-green-500 bg-white text-gray-800"
             required
           />
+          <p className="mt-1 text-sm">
+            <span className={usernameValid ? "text-green-500" : "text-red-500"}>
+              {usernameValid ? "✔" : "✖"} Username must be at least 3 characters
+            </span>
+          </p>
         </div>
 
+        {/* Password */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <div className="relative">
@@ -104,15 +111,23 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
             />
             <button
               type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-600 hover:text-gray-800 focus:outline-none"
-              style={{ top: "50%", transform: "translateY(-50%)" }}
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-0 px-3 flex items-center focus:outline-none"
             >
               {showPassword ? <IoEyeOffOutline size={20} /> : <IoEyeOutline size={20} />}
             </button>
           </div>
+          <div className="mt-1 space-y-1 text-sm">
+            <p className={passwordLengthValid ? "text-green-500" : "text-red-500"}>
+              {passwordLengthValid ? "✔" : "✖"} At least 6 characters
+            </p>
+            <p className={passwordNumberValid ? "text-green-500" : "text-red-500"}>
+              {passwordNumberValid ? "✔" : "✖"} Contains at least one number
+            </p>
+          </div>
         </div>
 
+        {/* Avatar */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Upload Avatar (optional)
@@ -132,19 +147,29 @@ export default function RegisterModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
-          disabled={loading}
+          disabled={
+            registerMutation.status === "pending" ||
+            !usernameValid ||
+            !passwordLengthValid ||
+            !passwordNumberValid
+          }
           className={`w-full py-2 rounded text-white ${
-            loading ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
+            registerMutation.status === "pending" ||
+            !usernameValid ||
+            !passwordLengthValid ||
+            !passwordNumberValid
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
           }`}
         >
-          {loading ? "Registering…" : "Register"}
+          {registerMutation.status === "pending" ? "Registering…" : "Register"}
         </button>
 
-        {error && (
-          <p className="mt-2 text-sm text-red-500">Registration failed. Try another username.</p>
-        )}
+        {/* Server Error */}
+        {serverError && <p className="mt-2 text-sm text-red-500">{serverError}</p>}
       </form>
     </Modal>
   );

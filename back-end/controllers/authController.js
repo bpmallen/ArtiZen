@@ -10,6 +10,19 @@ export const register = async (req, res, next) => {
       return res.status(400).json({ message: `Username and password are required.` });
     }
 
+    if (username.length < 3) {
+      return res.status(400).json({ message: "Username must be at least 3 characters long." });
+    }
+
+    // Password must include at least one digit
+    if (!/\d/.test(password)) {
+      return res.status(400).json({ message: "Password must contain at least one number." });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long." });
+    }
+
     let profileImageUrl = "";
     if (req.file && req.file.path) {
       profileImageUrl = req.file.path; // ← Cloudinary HTTPS URL
@@ -56,12 +69,12 @@ export const login = async (req, res, next) => {
 
     const user = await User.findOne({ username });
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Username does not exist" });
     }
 
     const isMatch = await comparePasswords(password, user.passwordHash);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Incorrect Password" });
     }
 
     const token = generateToken(user._id);

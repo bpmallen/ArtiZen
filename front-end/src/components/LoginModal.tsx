@@ -1,9 +1,10 @@
+// src/components/LoginModal.tsx
 import React, { useState } from "react";
 import Modal from "./Modal";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { AxiosError } from "axios";
 import { apiClient, setAuthToken } from "../services/apiClient";
 import { useAuth } from "../contexts/useAuth";
-
 import { IoEyeOutline, IoEyeOffOutline } from "react-icons/io5";
 
 interface BackendUser {
@@ -11,29 +12,29 @@ interface BackendUser {
   username: string;
   profileImageUrl: string;
 }
-
 interface LoginResponse {
   user: BackendUser;
   token: string;
 }
 
 export default function LoginModal({ onClose }: { onClose: () => void }) {
+  const { login } = useAuth();
+  const queryClient = useQueryClient();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const queryClient = useQueryClient();
-  const { login } = useAuth();
+  const [serverError, setServerError] = useState<string>("");
 
-  const loginMutation = useMutation<LoginResponse, Error, void>({
+  const loginMutation = useMutation<LoginResponse, AxiosError<{ message: string }>, void>({
     mutationFn: async () => {
-      const response = await apiClient.post<LoginResponse>("/auth/login", {
+      const res = await apiClient.post<LoginResponse>("/auth/login", {
         username,
         password,
       });
-      return response.data;
+      return res.data;
     },
-    onSuccess: (data) => {
-      const { user, token } = data;
+    onSuccess: ({ user, token }) => {
       localStorage.setItem("token", token);
       setAuthToken(token);
       login(token, user);
@@ -41,35 +42,37 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
       onClose();
     },
     onError: (err) => {
-      console.error("Login failed:", err);
-      alert("Login failed. Please check your credentials.");
+      const msg = err.response?.data?.message ?? err.message;
+      alert(msg);
+      setServerError(msg);
     },
   });
 
+  const loading = loginMutation.status === "pending";
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setServerError("");
     loginMutation.mutate();
   };
-
-  const loading = loginMutation.status === "pending";
-  const error = loginMutation.status === "error";
 
   return (
     <Modal onClose={onClose}>
       <h2 className="text-2xl font-semibold text-gray-800 mb-5">Log In</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Username */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
           <input
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Enter your username"
-            className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white text-gray-800"
+            className="w-full border border-gray-300 rounded px-3 py-2"
             required
           />
         </div>
 
+        {/* Password with toggle */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <div className="relative">
@@ -77,22 +80,20 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500 bg-white text-gray-800"
+              className="w-full border border-gray-300 rounded px-3 py-2"
               required
             />
-            {/* Toggle checkbox/button */}
             <button
               type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 px10 flex items-center  focus:outline-none"
-              // style={{ top: "50%", transform: "translateY(-50%)" }}
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-0 px-3 flex items-center"
             >
-              {showPassword ? <IoEyeOffOutline size={20} /> : <IoEyeOutline size={20} />}
+              {showPassword ? <IoEyeOffOutline /> : <IoEyeOutline />}
             </button>
           </div>
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
           disabled={loading}
@@ -103,7 +104,8 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
           {loading ? "Logging in…" : "Log In"}
         </button>
 
-        {error && <p className="mt-2 text-sm text-red-500">Login failed. Please try again.</p>}
+        {/* Inline server error */}
+        {serverError && <p className="mt-2 text-sm text-red-500">{serverError}</p>}
       </form>
     </Modal>
   );
