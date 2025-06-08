@@ -46,7 +46,7 @@ export default function ArtworkCard({ artwork, showSource }: ArtworkCardProps) {
       </Link>
 
       {/* Details footer */}
-      <div className="p-4 h-40 flex flex-col justify-between">
+      <div className="p-4 h-40 flex flex-col justify-between bg-black">
         {/* Title row with save icon on the right */}
         <div className="flex items-center space-x-2">
           <Link to={`/artwork/${artwork.source}/${artwork.id}`} className="flex-1 min-w-0">

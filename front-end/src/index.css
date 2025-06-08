@@ -25,3 +25,9 @@
     font-family: "Roboto", system-ui, sans-serif;
   }
 }
+.swiper-pagination {
+  position: relative !important;
+  bottom: auto !important;
+  margin-top: 1rem !important;
+  z-index: 20 !important;
+}
