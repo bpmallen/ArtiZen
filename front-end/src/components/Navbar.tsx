@@ -1,15 +1,15 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { RxAvatar } from "react-icons/rx";
 import { useAuth } from "../contexts/useAuth";
-import LoginModal from "./LoginModal";
-import RegisterModal from "./RegisterModal";
 
-export default function NavBar() {
+export interface NavBarProps {
+  onOpenLogin: () => void;
+  onOpenRegister: () => void;
+}
+
+export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
   const { isAuthenticated, currentUser, logout } = useAuth();
   const avatarSrc = currentUser?.profileImageUrl;
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   return (
     <nav className="bg-black px-2 sm:px-4 md:px-8 lg:px-20">
@@ -84,13 +84,13 @@ export default function NavBar() {
             ) : (
               <>
                 <button
-                  onClick={() => setShowLoginModal(true)}
+                  onClick={onOpenLogin}
                   className="w-full text-left px-4 py-2 text-white hover:bg-gray-800"
                 >
                   Login
                 </button>
                 <button
-                  onClick={() => setShowRegisterModal(true)}
+                  onClick={onOpenRegister}
                   className="w-full text-left px-4 py-2 text-white hover:bg-gray-800"
                 >
                   Register
@@ -100,10 +100,6 @@ export default function NavBar() {
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-      {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
-      {showRegisterModal && <RegisterModal onClose={() => setShowRegisterModal(false)} />}
     </nav>
   );
 }

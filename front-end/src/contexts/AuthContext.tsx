@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { apiClient, setAuthToken } from "../services/apiClient";
 import { AuthContext, type User } from "./AuthContextDefinition";
+import { jwtDecode } from "jwt-decode";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   //  token state: initialize from localStorage (if any)
@@ -14,27 +15,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   //  Whenever `token` change, sync Axios header and fetch /auth/me
   useEffect(() => {
-    if (token) {
-      setAuthToken(token);
-
-      apiClient
-        .get("/auth/me")
-        .then((res) => {
-          setCurrentUser(res.data.user);
-        })
-        .catch((err) => {
-          // If token invalid/expired, clear everything
-          console.error("AuthContext: /auth/me failed", err);
-          setToken(null);
-          localStorage.removeItem("token");
-          setCurrentUser(null);
-          setAuthToken(null);
-        });
-    } else {
+    const raw = localStorage.getItem("token");
+    if (!raw) {
+      // no token
       setAuthToken(null);
       setCurrentUser(null);
+      return;
     }
-  }, [token]);
+
+    // decode expiration
+    interface JWTPayload {
+      exp: number;
+    }
+    let payload: JWTPayload;
+    try {
+      payload = jwtDecode<JWTPayload>(raw);
+    } catch {
+      // bad token
+      localStorage.removeItem("token");
+      setAuthToken(null);
+      return;
+    }
+
+    // if expired
+    if (Date.now() >= payload.exp * 1000) {
+      localStorage.removeItem("token");
+      setAuthToken(null);
+      return;
+    }
+
+    // still valid — set header and fetch user
+    setAuthToken(raw);
+    setToken(raw); // if you want to keep token state in sync
+    apiClient
+      .get("/auth/me")
+      .then((res) => setCurrentUser(res.data.user))
+      .catch((err) => {
+        console.error("AuthContext: /auth/me failed", err);
+        localStorage.removeItem("token");
+        setAuthToken(null);
+        setCurrentUser(null);
+        setToken(null);
+      });
+  }, []);
 
   // login(token, user): store the token & user
   const login = (newToken: string, user: User) => {

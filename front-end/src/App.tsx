@@ -8,16 +8,7 @@ import RegisterModal from "./components/RegisterModal";
 import CollectionsPage from "./pages/CollectionsPage";
 import CollectionDetailPage from "./pages/CollectionDetailPage";
 import ProfilePage from "./pages/ProfilePage";
-import { useAuth } from "./contexts/useAuth";
-
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
-}
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);

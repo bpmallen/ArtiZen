@@ -1,4 +1,3 @@
-// front-end/src/contexts/useAuth.ts
 import { useContext } from "react";
 import { AuthContext } from "./AuthContextDefinition";
 
