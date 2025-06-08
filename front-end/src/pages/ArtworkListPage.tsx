@@ -5,6 +5,8 @@ import { useMetArtworks } from "../hooks/useMetArtworks";
 import { useHarvardArtworks } from "../hooks/useHarvardArtworks";
 import ArtworkCard from "../components/ArtworkCard";
 
+import bgImage from "../assets/jack-hunter-1L4E_lsIb9Q-unsplash.jpg";
+
 type SortOption = "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc";
 
 export default function ArtworkListPage() {
@@ -116,7 +118,24 @@ export default function ArtworkListPage() {
   const handleNext = () => setPage(Math.min(totalPages - 1, page + 1));
 
   return (
-    <div className="bg-offwhite min-h-screen">
+    <div className="min-h-screen bg-black text-white">
+      {/* ─── Hero Banner ─── */}
+      <section
+        className="relative h-90 w-full bg-cover bg-center"
+        style={{ backgroundImage: `url(${bgImage})` }}
+        // https://images.unsplash.com/photo-1601887389937-0b02c26b602c?q=80&w=2523&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
+      >
+        {/* dark overlay */}
+        <div className="absolute inset-0 bg-black/60" />
+
+        {/* banner content */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center">
+          <h1 className="text-4xl lg:text-5xl font-heading">Discover & Curate</h1>
+          <p className="mt-2 max-w-xl text-lg">
+            Explore thousands of artworks from the MET and Harvard Art Museums.
+          </p>
+        </div>
+      </section>
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* ─── Tabs ─── */}
         <div className="flex space-x-6 mb-8 border-b border-text-light">
@@ -140,11 +159,11 @@ export default function ArtworkListPage() {
           ))}
         </div>
 
-        <div className="flex gap-8">
+        <div className="min-h-screen flex">
           {/* ─── Sidebar Filters ─── */}
-          <aside className="w-64 pr-4 sticky top-0 self-start space-y-6">
+          <aside className="w-72 p-6 bg-black text-white space-y-6 mr-12 sticky top-10">
             {tab === "met" && (
-              <div className="bg-white rounded-lg shadow-card p-6 space-y-4">
+              <div className="bg-black rounded-lg shadow-card p-6 space-y-4">
                 <h2 className="font-heading text-lg font-medium text-text">MET Filters</h2>
                 <label className="block">
                   <input
@@ -258,7 +277,7 @@ export default function ArtworkListPage() {
             )}
 
             {tab === "harvard" && (
-              <div className="bg-white rounded-lg shadow-card p-6 space-y-4">
+              <div className="bg-black rounded-lg shadow-card p-6 space-y-4">
                 <h2 className="font-heading text-lg font-medium text-text">Harvard Filters</h2>
                 <label className="block">
                   Keyword:
@@ -293,7 +312,7 @@ export default function ArtworkListPage() {
             )}
 
             {tab === "all" && (
-              <div className="bg-white rounded-lg shadow-card p-6 space-y-4">
+              <div className="bg-black rounded-lg shadow-card p-6 space-y-4">
                 <h2 className="font-heading text-lg font-medium text-text">Both Collections</h2>
                 <label className="block">
                   Sort by:
@@ -318,7 +337,7 @@ export default function ArtworkListPage() {
             {/* Search Bar */}
             <div className="flex gap-2">
               <input
-                className="flex-grow border border-text-light rounded-l-lg px-3 py-2 focus:ring-2 focus:ring-primary"
+                className="flex-grow   border border-text-light rounded-l-lg px-3 py-2 focus:ring-2 focus:ring-primary"
                 placeholder={
                   tab === "met"
                     ? "Search MET…"
@@ -355,9 +374,12 @@ export default function ArtworkListPage() {
             {error && <p className="text-center text-red-600">Error: {error.message}</p>}
 
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {Array.from({ length: PER_API_PAGE }).map((_, i) => (
-                  <div key={i} className="w-80 h-[28rem] rounded-lg bg-gray-200 skeleton" />
+                  <div
+                    key={i}
+                    className="w-full h-[32rem] rounded-lg border border-white bg-gray-800 skeleton"
+                  />
                 ))}
               </div>
             ) : artworks.length === 0 ? (
@@ -379,7 +401,7 @@ export default function ArtworkListPage() {
               <button
                 onClick={handlePrev}
                 disabled={page === 0}
-                className="px-3 py-1 rounded-lg border bg-white text-text hover:bg-gray-100 disabled:opacity-50"
+                className="px-3 py-1 rounded-lg border border-white bg-black text-white hover:bg-gray-700 disabled:opacity-50"
               >
                 Prev
               </button>
@@ -398,8 +420,8 @@ export default function ArtworkListPage() {
                     onClick={() => setPage(pIndex)}
                     className={`px-3 py-1 rounded-lg border ${
                       pIndex === page
-                        ? "bg-primary text-white border-primary"
-                        : "bg-white text-text hover:bg-gray-100"
+                        ? "bg-white text-black border-black"
+                        : "bg-black text-white border-white hover:bg-gray-700"
                     }`}
                   >
                     {pIndex + 1}
@@ -409,7 +431,7 @@ export default function ArtworkListPage() {
               <button
                 onClick={handleNext}
                 disabled={page + 1 >= totalPages}
-                className="px-3 py-1 rounded-lg border bg-white text-text hover:bg-gray-100 disabled:opacity-50"
+                className="px-3 py-1 rounded-lg border border-white bg-black text-white hover:bg-gray-700 disabled:opacity-50"
               >
                 Next
               </button>

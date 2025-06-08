@@ -1,13 +1,16 @@
-// tailwind.config.js
-/** @type {import("tailwindcss").Config} */
+/** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-      colors: { offwhite: "#F9F3E7", vintage: "#F8EBD7" },
       fontFamily: {
-        heading: ['"Playfair Display"', "serif"],
-        body: ["Roboto", "sans-serif"],
+        heading: ["Playfair Display", "serif"],
+        body: ["Cormorant Garamond", "serif"],
+      },
+      fontSize: {
+        // optional extra‐large display size
+        "7xl": ["5rem", { lineHeight: "1.1" }],
       },
     },
   },

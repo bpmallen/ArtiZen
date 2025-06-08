@@ -1,4 +1,3 @@
-// src/components/ArtworkCard.tsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
@@ -17,14 +16,18 @@ export default function ArtworkCard({ artwork, showSource }: ArtworkCardProps) {
   return (
     <div
       className="
-        relative
-        w-80 h-[28rem]
-        bg-offwhite rounded-lg shadow-card overflow-hidden
-        flex flex-col
-        opacity-0 animate-fade-in-up
-        hover:shadow-lg hover:scale-105
-        transition-all duration-300
-      "
+            artwork-card
+            relative
+            w-full            /* fill its grid column */ :contentReference[oaicite:0]{index=0}
+            h-[32rem]        /* larger fixed height */ :contentReference[oaicite:1]{index=1}
+            bg-offwhite
+            text-text
+            rounded-lg
+            overflow-hidden
+             flex-col
+            border border-white   /* white outline for grid lines */ :contentReference[oaicite:2]{index=2}
+            shadow-card
+          "
     >
       {/* Image */}
       <Link
