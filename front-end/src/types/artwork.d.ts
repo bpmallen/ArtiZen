@@ -249,3 +249,11 @@ export interface HarvardFilters extends DateRangeFilter {
 export type Filters =
   | { source: "met"; filters: MetFilters }
   | { source: "harvard"; filters: HarvardFilters };
+
+export type SortOption = "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc";
+
+// Department is returned by your Met Departments hook
+export interface Department {
+  departmentId: number;
+  displayName: string;
+}

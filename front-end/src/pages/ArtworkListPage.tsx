@@ -1,99 +1,85 @@
-import { useState, useCallback, useMemo } from "react";
-import type { MetFilters, HarvardFilters, CombinedArtwork } from "../types/artwork";
+import { useState, useMemo } from "react";
+import type { MetFilters, HarvardFilters, CombinedArtwork, SortOption } from "../types/artwork";
 import { useMetDepartments } from "../hooks/useMetDepartments";
 import { useMetArtworks } from "../hooks/useMetArtworks";
 import { useHarvardArtworks } from "../hooks/useHarvardArtworks";
 import ArtworkCard from "../components/ArtworkCard";
-
+import Sidebar from "../components/Sidebar";
 import bgImage from "../assets/jack-hunter-1L4E_lsIb9Q-unsplash.jpg";
 
-type SortOption = "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc";
-
 export default function ArtworkListPage() {
-  // ─── Tabs & “ALL” page state ───
   type TabType = "met" | "harvard" | "all";
   const [tab, setTab] = useState<TabType>("met");
-  const [allPage, setAllPage] = useState(0);
 
-  // ─── MET state/hooks ───
-  const [metPage, setMetPage] = useState(0);
+  // MET state
   const [metFilters, setMetFilters] = useState<MetFilters>({});
-  const [metSort, setMetSort] = useState<
-    "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
-  >("relevance");
+  const [metSort, setMetSort] = useState<SortOption>("relevance");
   const [metInput, setMetInput] = useState("");
   const [metSearch, setMetSearch] = useState("");
+  const [metPage, setMetPage] = useState(0);
+  const { departments } = useMetDepartments();
 
-  const metHookPage = tab === "all" ? allPage : metPage;
+  // Harvard state
+  const [harvFilters, setHarvFilters] = useState<HarvardFilters>({});
+  const [harvSort, setHarvSort] = useState<SortOption>("relevance");
+  const [harvInput, setHarvInput] = useState("");
+  const [harvSearch, setHarvSearch] = useState("");
+  const [harvPage, setHarvPage] = useState(0);
+
+  // All state
+  const [allPage, setAllPage] = useState(0);
+  const [allSort, setAllSort] = useState<SortOption>("relevance");
+
+  const PER_API_PAGE = 30;
+  const pageParam = tab === "met" ? metPage : tab === "harvard" ? harvPage : allPage;
+
   const {
     artworks: metArtworks,
     total: totalMet,
     loading: metLoading,
     error: metError,
-  } = useMetArtworks(metSearch, metFilters, metHookPage, metSort);
+  } = useMetArtworks(metSearch, metFilters, pageParam, metSort);
 
-  const { departments } = useMetDepartments();
-
-  // ─── Harvard state/hooks ───
-  const [harvPage, setHarvPage] = useState(0);
-  const [harvFilters, setHarvFilters] = useState<HarvardFilters>({});
-  const [harvSort, setHarvSort] = useState<
-    "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
-  >("relevance");
-  const [harvInput, setHarvInput] = useState("");
-  const [harvSearch, setHarvSearch] = useState("");
-
-  const harvHookPage = tab === "all" ? allPage : harvPage;
   const {
     artworks: harvArtworks,
     total: totalHarv,
     loading: harvLoading,
     error: harvError,
-  } = useHarvardArtworks(harvSearch, harvFilters, harvHookPage, harvSort);
+  } = useHarvardArtworks(harvSearch, harvFilters, pageParam, harvSort);
 
-  const PER_API_PAGE = 30;
-
-  const metToDisplay = useMemo<CombinedArtwork[]>(() => metArtworks, [metArtworks]);
-  const harvToDisplay = useMemo<CombinedArtwork[]>(() => harvArtworks, [harvArtworks]);
-
-  const [allSort, setAllSort] = useState<
-    "relevance" | "titleAsc" | "titleDesc" | "dateAsc" | "dateDesc"
-  >("relevance");
-  const combinedToDisplay = useMemo<CombinedArtwork[]>(() => {
-    const merged = [...metToDisplay, ...harvToDisplay];
-    if (allSort === "relevance") {
-      return merged;
+  const combinedArtworks = useMemo<CombinedArtwork[]>(() => {
+    const merged = [...metArtworks, ...harvArtworks];
+    switch (allSort) {
+      case "titleAsc":
+        return merged.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      case "titleDesc":
+        return merged.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
+      case "dateAsc":
+        return merged.sort((a, b) => {
+          const aDate =
+            a.source === "met" ? a.metSlim?.objectEndDate ?? 0 : a.harvardSlim?.dateend ?? 0;
+          const bDate =
+            b.source === "met" ? b.metSlim?.objectEndDate ?? 0 : b.harvardSlim?.dateend ?? 0;
+          return aDate - bDate;
+        });
+      case "dateDesc":
+        return merged.sort((a, b) => {
+          const aDate =
+            a.source === "met" ? a.metSlim?.objectEndDate ?? 0 : a.harvardSlim?.dateend ?? 0;
+          const bDate =
+            b.source === "met" ? b.metSlim?.objectEndDate ?? 0 : b.harvardSlim?.dateend ?? 0;
+          return bDate - aDate;
+        });
+      default:
+        return merged;
     }
-    if (allSort === "titleAsc") {
-      return merged.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-    }
-    if (allSort === "titleDesc") {
-      return merged.sort((a, b) => (b.title || "").localeCompare(a.title || ""));
-    }
-    if (allSort === "dateAsc") {
-      return merged.sort((a, b) => {
-        const aDate =
-          a.source === "met" ? a.metSlim?.objectEndDate ?? 0 : a.harvardSlim?.dateend ?? 0;
-        const bDate =
-          b.source === "met" ? b.metSlim?.objectEndDate ?? 0 : b.harvardSlim?.dateend ?? 0;
-        return aDate - bDate;
-      });
-    }
-
-    return merged.sort((a, b) => {
-      const aDate =
-        a.source === "met" ? a.metSlim?.objectEndDate ?? 0 : a.harvardSlim?.dateend ?? 0;
-      const bDate =
-        b.source === "met" ? b.metSlim?.objectEndDate ?? 0 : b.harvardSlim?.dateend ?? 0;
-      return bDate - aDate;
-    });
-  }, [metToDisplay, harvToDisplay, allSort]);
+  }, [metArtworks, harvArtworks, allSort]);
 
   const artworks = useMemo<CombinedArtwork[]>(() => {
-    if (tab === "met") return metToDisplay;
-    if (tab === "harvard") return harvToDisplay;
-    return combinedToDisplay;
-  }, [tab, metToDisplay, harvToDisplay, combinedToDisplay]);
+    if (tab === "met") return metArtworks;
+    if (tab === "harvard") return harvArtworks;
+    return combinedArtworks;
+  }, [tab, metArtworks, harvArtworks, combinedArtworks]);
 
   const totalPages = useMemo(() => {
     if (tab === "met") return Math.ceil(totalMet / PER_API_PAGE);
@@ -101,24 +87,25 @@ export default function ArtworkListPage() {
     return Math.max(Math.ceil(totalMet / PER_API_PAGE), Math.ceil(totalHarv / PER_API_PAGE));
   }, [tab, totalMet, totalHarv]);
 
-  const page = tab === "met" ? metPage : tab === "harvard" ? harvPage : allPage;
-  const setPage = useCallback(
-    (p: number) => {
-      if (tab === "met") setMetPage(p);
-      else if (tab === "harvard") setHarvPage(p);
-      else setAllPage(p);
-    },
-    [tab]
-  );
+  const handlePrev = () => {
+    const newPage = Math.max(0, pageParam - 1);
+    if (tab === "met") setMetPage(newPage);
+    else if (tab === "harvard") setHarvPage(newPage);
+    else setAllPage(newPage);
+  };
+
+  const handleNext = () => {
+    const newPage = Math.min(totalPages - 1, pageParam + 1);
+    if (tab === "met") setMetPage(newPage);
+    else if (tab === "harvard") setHarvPage(newPage);
+    else setAllPage(newPage);
+  };
 
   const loading = metLoading || harvLoading;
   const error = metError || harvError;
 
-  const handlePrev = () => setPage(Math.max(0, page - 1));
-  const handleNext = () => setPage(Math.min(totalPages - 1, page + 1));
-
   return (
-    <div className="min-h-screen bg-black text-white">
+    <>
       {/* ─── Hero Banner ─── */}
       <section
         className="relative h-90 w-full bg-cover bg-center"
@@ -126,319 +113,160 @@ export default function ArtworkListPage() {
         // https://images.unsplash.com/photo-1601887389937-0b02c26b602c?q=80&w=2523&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
       >
         {/* dark overlay */}
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/40" />
 
         {/* banner content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center">
-          <h1 className="text-4xl lg:text-5xl font-heading">Discover & Curate</h1>
+        <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center text-white">
+          <h1 className="text-4xl lg:text-5xl font-heading ">Discover & Curate</h1>
           <p className="mt-2 max-w-xl text-lg">
             Explore thousands of artworks from the MET and Harvard Art Museums.
           </p>
         </div>
       </section>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* ─── Tabs ─── */}
-        <div className="flex space-x-6 mb-8 border-b border-text-light">
-          {(["met", "harvard", "all"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => {
-                setTab(t);
-                setMetPage(0);
-                setHarvPage(0);
-                setAllPage(0);
-              }}
-              className={
-                t === tab
-                  ? "pb-2 border-b-2 border-primary text-primary font-semibold"
-                  : "pb-2 text-text-light hover:text-primary transition"
-              }
-            >
-              {t.toUpperCase()}
-            </button>
-          ))}
-        </div>
 
-        <div className="min-h-screen flex">
-          {/* ─── Sidebar Filters ─── */}
-          <aside className="w-72 p-6 bg-black text-white space-y-6 mr-12 sticky top-10">
-            {tab === "met" && (
-              <div className="bg-black rounded-lg shadow-card p-6 space-y-4">
-                <h2 className="font-heading text-lg font-medium text-text">MET Filters</h2>
-                <label className="block">
-                  <input
-                    type="checkbox"
-                    className="mr-2"
-                    onChange={(e) =>
-                      setMetFilters((f) => ({ ...f, isHighlight: e.target.checked }))
-                    }
-                  />
-                  Highlights only
-                </label>
-                <label className="block">
-                  Department:
-                  <select
-                    className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:ring-2 focus:ring-primary"
-                    value={
-                      typeof metFilters.departmentId === "number" ? metFilters.departmentId : ""
-                    }
-                    onChange={(e) =>
-                      setMetFilters((f) => ({
-                        ...f,
-                        departmentId: e.target.value ? Number(e.target.value) : undefined,
-                      }))
-                    }
-                  >
-                    <option value="">All</option>
-                    {departments.map((d) => (
-                      <option key={d.departmentId} value={d.departmentId}>
-                        {d.displayName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="block">
-                  Geographic Location:
-                  <select
-                    className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:ring-2 focus:ring-primary"
-                    value={metFilters.geoLocation ?? ""}
-                    onChange={(e) =>
-                      setMetFilters((f) => ({
-                        ...f,
-                        geoLocation: e.target.value || undefined,
-                      }))
-                    }
-                  >
-                    <option value="">All</option>
-                    <option>Egypt</option>
-                    <option>Italy</option>
-                    <option>China</option>
-                    <option>France</option>
-                    <option>Greece</option>
-                    <option>Peru</option>
-                  </select>
-                </label>
-                <label className="block">
-                  Date / Era:
-                  <select
-                    className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:ring-2 focus:ring-primary"
-                    value={
-                      metFilters.dateBegin != null && metFilters.dateEnd != null
-                        ? `${metFilters.dateBegin}-${metFilters.dateEnd}`
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const [b, e2] = e.target.value.split("-").map(Number);
-                      setMetFilters((f) => ({
-                        ...f,
-                        dateBegin: isNaN(b) ? undefined : b,
-                        dateEnd: isNaN(e2) ? undefined : e2,
-                      }));
-                    }}
-                  >
-                    <option value="">All</option>
-                    <option value="0-1599">Before 1600</option>
-                    <option value="1600-1699">1600s</option>
-                    <option value="1700-1799">1700s</option>
-                    <option value="1800-1899">1800s</option>
-                    <option value="1900-1999">1900s</option>
-                    <option value="2000-2100">2000s+</option>
-                  </select>
-                </label>
-                <label className="block">
-                  Medium:
-                  <input
-                    type="text"
-                    className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:ring-2 focus:ring-primary"
-                    placeholder="e.g. Sculpture"
-                    onChange={(e) =>
-                      setMetFilters((f) => ({
-                        ...f,
-                        medium: e.target.value || undefined,
-                      }))
-                    }
-                  />
-                </label>
-                <label className="block">
-                  Sort by:
-                  <select
-                    className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:ring-2 focus:ring-primary"
-                    value={metSort}
-                    onChange={(e) => setMetSort(e.target.value as SortOption)}
-                  >
-                    <option value="relevance">Relevance</option>
-                    <option value="titleAsc">Title A → Z</option>
-                    <option value="titleDesc">Title Z → A</option>
-                    <option value="dateDesc">Date Newest → Oldest</option>
-                    <option value="dateAsc">Date Oldest → Newest</option>
-                  </select>
-                </label>
-              </div>
-            )}
+      <section className="flex bg-black text-white min-h-screen">
+        {/* Sidebar flush-left */}
+        <Sidebar
+          className="w-72"
+          tab={tab}
+          metFilters={metFilters}
+          setMetFilters={setMetFilters}
+          metSort={metSort}
+          setMetSort={setMetSort}
+          departments={departments}
+          harvFilters={harvFilters}
+          setHarvFilters={setHarvFilters}
+          harvSort={harvSort}
+          setHarvSort={setHarvSort}
+          allSort={allSort}
+          setAllSort={setAllSort}
+        />
 
-            {tab === "harvard" && (
-              <div className="bg-black rounded-lg shadow-card p-6 space-y-4">
-                <h2 className="font-heading text-lg font-medium text-text">Harvard Filters</h2>
-                <label className="block">
-                  Keyword:
-                  <input
-                    type="text"
-                    className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:ring-2 focus:ring-primary"
-                    placeholder="Titles, artists…"
-                    value={harvFilters.keyword ?? ""}
-                    onChange={(e) =>
-                      setHarvFilters((f) => ({
-                        ...f,
-                        keyword: e.target.value || undefined,
-                      }))
-                    }
-                  />
-                </label>
-                <label className="block">
-                  Sort by:
-                  <select
-                    className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:ring-2 focus:ring-primary"
-                    value={harvSort}
-                    onChange={(e) => setHarvSort(e.target.value as SortOption)}
-                  >
-                    <option value="relevance">Relevance</option>
-                    <option value="titleAsc">Title A → Z</option>
-                    <option value="titleDesc">Title Z → A</option>
-                    <option value="dateDesc">Date Newest → Oldest</option>
-                    <option value="dateAsc">Date Oldest → Newest</option>
-                  </select>
-                </label>
-              </div>
-            )}
-
-            {tab === "all" && (
-              <div className="bg-black rounded-lg shadow-card p-6 space-y-4">
-                <h2 className="font-heading text-lg font-medium text-text">Both Collections</h2>
-                <label className="block">
-                  Sort by:
-                  <select
-                    className="mt-1 w-full border border-text-light rounded px-3 py-2 focus:ring-2 focus:ring-primary"
-                    value={allSort}
-                    onChange={(e) => setAllSort(e.target.value as SortOption)}
-                  >
-                    <option value="relevance">Relevance</option>
-                    <option value="titleAsc">Title A → Z</option>
-                    <option value="titleDesc">Title Z → A</option>
-                    <option value="dateDesc">Date Newest → Oldest</option>
-                    <option value="dateAsc">Date Oldest → Newest</option>
-                  </select>
-                </label>
-              </div>
-            )}
-          </aside>
-
-          {/* ─── Main Content ─── */}
-          <main className="flex-1 flex flex-col space-y-6">
-            {/* Search Bar */}
-            <div className="flex gap-2">
-              <input
-                className="flex-grow   border border-text-light rounded-l-lg px-3 py-2 focus:ring-2 focus:ring-primary"
-                placeholder={
-                  tab === "met"
-                    ? "Search MET…"
-                    : tab === "harvard"
-                    ? "Search Harvard…"
-                    : "Search both…"
-                }
-                value={tab === "harvard" ? harvInput : metInput}
-                onChange={(e) =>
-                  tab === "harvard" ? setHarvInput(e.target.value) : setMetInput(e.target.value)
-                }
-              />
+        {/* Main content centered */}
+        <div className="flex-1 max-w-7xl mx-auto px-4 py-8">
+          {/* Tabs */}
+          <div className="flex space-x-6 mb-8 border-b border-text-light">
+            {(["met", "harvard", "all"] as TabType[]).map((t) => (
               <button
-                className="bg-primary text-white px-4 py-2 rounded-r-lg hover:bg-primary/90 transition"
+                key={t}
                 onClick={() => {
-                  if (tab === "met") {
-                    setMetSearch(metInput.trim());
-                    setMetPage(0);
-                  } else if (tab === "harvard") {
-                    setHarvSearch(harvInput.trim());
-                    setHarvPage(0);
-                  } else {
-                    setMetSearch(metInput.trim());
-                    setHarvSearch(metInput.trim());
-                    setAllPage(0);
-                  }
+                  setTab(t);
+                  setMetPage(0);
+                  setHarvPage(0);
+                  setAllPage(0);
                 }}
+                className={
+                  t === tab
+                    ? "pb-2 border-b-2 border-primary text-primary font-semibold"
+                    : "pb-2 text-text-light hover:text-primary transition"
+                }
               >
-                Search
+                {t.toUpperCase()}
               </button>
-            </div>
+            ))}
+          </div>
 
-            {/* Results */}
-            {error && <p className="text-center text-red-600">Error: {error.message}</p>}
+          {/* Search Bar */}
+          <div className="flex gap-2 mb-6">
+            <input
+              className="flex-grow border border-text-light rounded-l-lg px-3 py-2 focus:ring-2 focus:ring-primary"
+              placeholder={
+                tab === "met"
+                  ? "Search MET…"
+                  : tab === "harvard"
+                  ? "Search Harvard…"
+                  : "Search both…"
+              }
+              value={tab === "harvard" ? harvInput : metInput}
+              onChange={(e) =>
+                tab === "harvard" ? setHarvInput(e.target.value) : setMetInput(e.target.value)
+              }
+            />
+            <button
+              className="bg-primary text-white px-4 py-2 rounded-r-lg hover:bg-primary/90 transition"
+              onClick={() => {
+                if (tab === "met") {
+                  setMetSearch(metInput.trim());
+                  setMetPage(0);
+                } else if (tab === "harvard") {
+                  setHarvSearch(harvInput.trim());
+                  setHarvPage(0);
+                } else {
+                  setMetSearch(metInput.trim());
+                  setHarvSearch(harvInput.trim());
+                  setAllPage(0);
+                }
+              }}
+            >
+              Search
+            </button>
+          </div>
 
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {Array.from({ length: PER_API_PAGE }).map((_, i) => (
+          {/* Results Grid */}
+          {error && <p className="text-center text-red-600">Error: {error.message}</p>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
+            {loading
+              ? Array.from({ length: PER_API_PAGE }).map((_, i) => (
                   <div
                     key={i}
-                    className="w-full h-[32rem] rounded-lg border border-white bg-gray-800 skeleton"
+                    className="w-full h-[28rem] aspect-square rounded-lg border border-white bg-gray-800 skeleton"
                   />
-                ))}
-              </div>
-            ) : artworks.length === 0 ? (
-              <p className="text-center text-text-light">No artworks found.</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {artworks.map((art) => (
+                ))
+              : artworks.map((art) => (
                   <ArtworkCard
                     key={`${art.source}-${art.id}`}
                     artwork={art}
                     showSource={tab === "all"}
                   />
                 ))}
-              </div>
-            )}
+          </div>
 
-            {/* ─── Pagination ─── */}
-            <div className="mt-8 flex justify-center items-center flex-wrap gap-3">
-              <button
-                onClick={handlePrev}
-                disabled={page === 0}
-                className="px-3 py-1 rounded-lg border border-white bg-black text-white hover:bg-gray-700 disabled:opacity-50"
-              >
-                Prev
-              </button>
-              {(() => {
-                const pagesToShow = 5;
-                const half = Math.floor(pagesToShow / 2);
-                let start = Math.max(0, page - half);
-                let end = start + pagesToShow;
-                if (end > totalPages) {
-                  end = totalPages;
-                  start = Math.max(0, end - pagesToShow);
-                }
-                return Array.from({ length: end - start }, (_, i) => start + i).map((pIndex) => (
-                  <button
-                    key={pIndex}
-                    onClick={() => setPage(pIndex)}
-                    className={`px-3 py-1 rounded-lg border ${
-                      pIndex === page
-                        ? "bg-white text-black border-black"
-                        : "bg-black text-white border-white hover:bg-gray-700"
-                    }`}
-                  >
-                    {pIndex + 1}
-                  </button>
-                ));
-              })()}
-              <button
-                onClick={handleNext}
-                disabled={page + 1 >= totalPages}
-                className="px-3 py-1 rounded-lg border border-white bg-black text-white hover:bg-gray-700 disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          </main>
+          {/* Pagination (5 at a time) */}
+          <div className="mt-8 flex justify-center items-center gap-3">
+            <button
+              onClick={handlePrev}
+              disabled={pageParam === 0}
+              className="px-3 py-1 rounded-lg border border-white bg-black text-white hover:bg-gray-700 disabled:opacity-50"
+            >
+              Prev
+            </button>
+            {(() => {
+              const pagesToShow = 5;
+              const half = Math.floor(pagesToShow / 2);
+              let start = Math.max(0, pageParam - half);
+              let end = start + pagesToShow;
+              if (end > totalPages) {
+                end = totalPages;
+                start = Math.max(0, end - pagesToShow);
+              }
+              return Array.from({ length: end - start }, (_, i) => start + i).map((pIndex) => (
+                <button
+                  key={pIndex}
+                  onClick={() => {
+                    if (tab === "met") setMetPage(pIndex);
+                    else if (tab === "harvard") setHarvPage(pIndex);
+                    else setAllPage(pIndex);
+                  }}
+                  className={`px-3 py-1 rounded-lg border ${
+                    pIndex === pageParam
+                      ? "bg-white text-black border-black"
+                      : "bg-black text-white border-white hover:bg-gray-700"
+                  }`}
+                >
+                  {pIndex + 1}
+                </button>
+              ));
+            })()}
+            <button
+              onClick={handleNext}
+              disabled={pageParam + 1 >= totalPages}
+              className="px-3 py-1 rounded-lg border border-white bg-black text-white hover:bg-gray-700 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }

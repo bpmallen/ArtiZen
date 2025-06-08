@@ -18,14 +18,14 @@ export default function ArtworkCard({ artwork, showSource }: ArtworkCardProps) {
       className="
             artwork-card
             relative
-            w-full            /* fill its grid column */ :contentReference[oaicite:0]{index=0}
-            h-[32rem]        /* larger fixed height */ :contentReference[oaicite:1]{index=1}
+            w-full
+            aspect-square          /* ← forces 1:1 aspect ratio */
             bg-offwhite
             text-text
             rounded-lg
             overflow-hidden
-             flex-col
-            border border-white   /* white outline for grid lines */ :contentReference[oaicite:2]{index=2}
+            flex flex-col
+            border border-white
             shadow-card
           "
     >
