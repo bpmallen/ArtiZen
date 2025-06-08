@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { RxAvatar } from "react-icons/rx";
 import { useAuth } from "../contexts/useAuth";
-import LoginModal from "./LoginModal"; // your login modal
-import RegisterModal from "./RegisterModal"; // your register modal
+import LoginModal from "./LoginModal";
+import RegisterModal from "./RegisterModal";
 
 export default function NavBar() {
   const { isAuthenticated, currentUser, logout } = useAuth();
