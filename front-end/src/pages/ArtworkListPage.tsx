@@ -204,20 +204,21 @@ export default function ArtworkListPage() {
 
           {/* Results Grid */}
           {error && <p className="text-center text-red-600">Error: {error.message}</p>}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {loading
               ? Array.from({ length: PER_API_PAGE }).map((_, i) => (
                   <div
                     key={i}
-                    className="w-full h-[28rem] aspect-square rounded-lg border border-white bg-gray-800 skeleton"
+                    className="w-full h-[28rem] aspect-square rounded-lg bg-gray-800 skeleton"
                   />
                 ))
               : artworks.map((art) => (
-                  <ArtworkCard
+                  <div
                     key={`${art.source}-${art.id}`}
-                    artwork={art}
-                    showSource={tab === "all"}
-                  />
+                    className="p-2 transition-transform duration-200 hover:scale-105"
+                  >
+                    <ArtworkCard artwork={art} showSource={tab === "all"} />
+                  </div>
                 ))}
           </div>
 
