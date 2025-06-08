@@ -1,19 +1,25 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { useCollections } from "../hooks/useCollections";
 import {
+  useQueries,
   useMutation,
   useQueryClient,
-  useQueries,
   type UseQueryResult,
 } from "@tanstack/react-query";
-import { apiClient } from "../services/apiClient";
 import { fetchMetById, fetchHarvardById } from "../services/artworkDetails";
-import { useState } from "react";
 import type { MetDetail, HarvardDetail } from "../services/artworkDetails";
+import type { CombinedArtwork } from "../types/artwork";
+import ArtworkCard from "../components/ArtworkCard";
 
-import { CiImageOn } from "react-icons/ci";
 import { ImBin } from "react-icons/im";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, A11y } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import { apiClient } from "../services/apiClient";
+import { useMemo } from "react";
 
 interface RemoveItemArgs {
   artworkId: string;
@@ -21,20 +27,23 @@ interface RemoveItemArgs {
 }
 
 export default function CollectionDetailPage() {
+  // ─── Hooks ─────────────────────────────────────────────────────────
   const { currentUser } = useAuth();
   const { collectionName } = useParams<{ collectionName: string }>();
-  const navigate = useNavigate();
   const qc = useQueryClient();
 
-  //  Fetch all collections, then pick the one matching URL param
-  const { data: collections = [], isLoading: collectionsLoading } = useCollections();
+  const { data: collections = [], isLoading: colsLoading } = useCollections();
   const collection = collections.find((c) => c.name === collectionName);
 
-  // Prepare a an array of items (even if collection is undefined)
-  const items = collection?.items ?? [];
+  // Memoize items list
+  const items = useMemo(() => (collection ? collection.items : []), [collection]);
 
+  // We're showing *all* items here
+  const pagedItems = items;
+
+  // Fetch details for each item
   const detailQueries = useQueries({
-    queries: items.map((item) => ({
+    queries: pagedItems.map((item) => ({
       queryKey: [item.source, item.artworkId] as const,
       queryFn: () =>
         item.source === "met" ? fetchMetById(item.artworkId) : fetchHarvardById(item.artworkId),
@@ -42,7 +51,7 @@ export default function CollectionDetailPage() {
     })),
   }) as UseQueryResult<MetDetail | HarvardDetail, Error>[];
 
-  // Mutation to remove an item from this collection
+  // Remove‐item mutation
   const removeMutation = useMutation<void, Error, RemoveItemArgs>({
     mutationFn: async ({ artworkId, source }) => {
       await apiClient.delete(
@@ -54,201 +63,114 @@ export default function CollectionDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["collections", currentUser!._id] });
     },
-    onError: (err: Error) => {
-      console.error("Failed to remove item:", err);
-    },
   });
 
-  // Mutation: rename the entire collection
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [newName, setNewName] = useState(collectionName || "");
-
-  const renameMutation = useMutation<void, Error, string>({
-    mutationFn: async (name: string) => {
-      await apiClient.put(`/users/${currentUser!._id}/collections/${collectionName}`, {
-        newName: name,
-      });
-    },
-    onSuccess: () => {
-      // Invalidate so collections list refreshes
-      qc.invalidateQueries({ queryKey: ["collections", currentUser!._id] });
-      // Navigate to the newly renamed collection
-      navigate(`/collections/${newName}`);
-    },
-    onError: (err: Error) => {
-      console.error("Rename collection failed:", err);
-    },
-  });
-
-  // Mutation: delete the entire collection
-  const deleteMutation = useMutation<void, Error>({
-    mutationFn: async () => {
-      await apiClient.delete(`/users/${currentUser!._id}/collections/${collectionName}`);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["collections", currentUser!._id] });
-      navigate("/collections");
-    },
-    onError: (err: Error) => {
-      console.error("Delete collection failed:", err);
-    },
-  });
-
-  //Early returns for loading / missing collection
-  if (collectionsLoading) {
+  // ─── Early returns ─────────────────────────────────────────────────
+  if (colsLoading) {
     return <p className="p-4">Loading collections…</p>;
   }
-
   if (!collection) {
     return (
       <div className="p-4">
         <p>Collection “{collectionName}” not found.</p>
         <Link to="/collections" className="text-blue-600 hover:underline">
-          ← Back to My Collections
+          ← Back to Collections
         </Link>
       </div>
     );
   }
 
+  // ─── Render carousel ────────────────────────────────────────────────
   return (
     <div className="p-4">
-      {/* Header: Collection Name + Rename / Delete Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h2 className="text-2xl font-semibold">{collection.name}</h2>
+      <h2 className="text-2xl font-semibold mb-6">{collection.name}</h2>
 
-        <div className="flex items-center gap-2">
-          {/* Rename button / input */}
-          {!isRenaming ? (
-            <button
-              onClick={() => {
-                setIsRenaming(true);
-                setNewName(collectionName!);
-              }}
-              className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-            >
-              Rename
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="border border-gray-400 rounded px-2 py-1"
-              />
-              <button
-                disabled={!newName.trim() || newName === collectionName}
-                onClick={() => renameMutation.mutate(newName.trim())}
-                className={`px-3 py-1 rounded text-white ${
-                  !newName.trim() || newName === collectionName
-                    ? "bg-gray-300 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-              >
-                Save
-              </button>
-              <button
-                onClick={() => setIsRenaming(false)}
-                className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-
-          {/* Delete button */}
-          <button
-            onClick={() => {
-              if (
-                window.confirm(
-                  `Are you sure you want to delete the entire collection “${collectionName}”?`
-                )
-              ) {
-                deleteMutation.mutate();
-              }
-            }}
-            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Delete Collection
-          </button>
-        </div>
-      </div>
-
-      {/*  Artwork Items */}
-      {items.length === 0 ? (
-        <p>No artworks saved here yet.</p>
-      ) : (
-        <div className="space-y-4">
-          {items.map((item, idx) => {
-            const { data: details, isLoading } = detailQueries[idx];
-
-            // If we haven’t loaded yet, show a skeleton:
-            if (isLoading || !details) {
-              return (
-                <div key={`${item.source}-${item.artworkId}`} className="flex items-center …">
-                  <div className="w-16 h-16 bg-gray-200 animate-pulse rounded" />
-                  <div className="ml-4">
-                    <div className="h-4 w-24 bg-gray-200 animate-pulse mb-1 rounded" />
-                    <div className="h-3 w-16 bg-gray-200 animate-pulse rounded" />
-                  </div>
-                </div>
-              );
-            }
-
-            // Now that we have `details`, pick the right fields:
-            const imgSrc =
-              item.source === "met"
-                ? (details as MetDetail).primaryImageSmall
-                : (details as HarvardDetail).primaryimageurl;
-
-            const title =
-              details.title ?? // both have `.title`
-              "Untitled";
-
-            const date =
-              item.source === "met"
-                ? (details as MetDetail).objectDate
-                : (details as HarvardDetail).dated;
-
+      <Swiper
+        modules={[Navigation, Pagination, A11y]}
+        spaceBetween={16}
+        slidesPerView={1}
+        navigation
+        pagination={{ clickable: true }}
+        breakpoints={{
+          640: { slidesPerView: 2 },
+          1024: { slidesPerView: 3 },
+        }}
+      >
+        {pagedItems.map((item, idx) => {
+          const q = detailQueries[idx];
+          if (q.isLoading || !q.data) {
             return (
-              <div key={`${item.source}-${item.artworkId}`} className="flex items-center gap-4">
-                {imgSrc ? (
-                  <img src={imgSrc} alt={title} className="w-16 h-16 rounded object-cover" />
-                ) : (
-                  <div className="w-16 h-16 flex items-center justify-center rounded bg-gray-100">
-                    <CiImageOn size={24} className="text-gray-400" />
-                  </div>
-                )}
-                <div className="ml-4 flex-1">
-                  <Link
-                    to={`/artwork/${item.source}/${item.artworkId}`}
-                    className="font-medium hover:underline"
-                  >
-                    {title}
-                  </Link>
-                  <div className="text-sm text-gray-600">
-                    {date ?? "n.d."} <span className="italic">({item.source.toUpperCase()})</span>
-                  </div>
-                </div>
+              <SwiperSlide key={`${item.source}-${item.artworkId}`}>
+                <div className="h-60 bg-gray-200 animate-pulse rounded-lg" />
+              </SwiperSlide>
+            );
+          }
+
+          const details = q.data;
+          const isMet = item.source === "met";
+
+          // Build the CombinedArtwork with full Slim data
+          const artwork: CombinedArtwork = {
+            id: item.artworkId,
+            source: item.source,
+            title: details.title ?? null,
+            primaryImageSmall: isMet
+              ? (details as MetDetail).primaryImageSmall
+              : (details as HarvardDetail).primaryimageurl,
+            artistDisplayName: isMet
+              ? (details as MetDetail).artistDisplayName || null
+              : (details as HarvardDetail).people?.[0]?.name || null,
+
+            // include full slim so date shows
+            metSlim: isMet
+              ? {
+                  objectID: (details as MetDetail).objectID,
+                  title: (details as MetDetail).title,
+                  artistDisplayName: (details as MetDetail).artistDisplayName,
+                  primaryImageSmall: (details as MetDetail).primaryImageSmall,
+                  objectEndDate: (details as MetDetail).objectEndDate,
+                }
+              : undefined,
+
+            harvardSlim: !isMet
+              ? {
+                  id: (details as HarvardDetail).id,
+                  objectnumber: (details as HarvardDetail).objectnumber,
+                  title: (details as HarvardDetail).title,
+                  datebegin: (details as HarvardDetail).datebegin,
+                  dateend: (details as HarvardDetail).dateend,
+                  dated: (details as HarvardDetail).dated,
+                  people: (details as HarvardDetail).people ?? [],
+                  primaryimageurl: (details as HarvardDetail).primaryimageurl,
+                }
+              : undefined,
+          };
+
+          return (
+            <SwiperSlide key={`${item.source}-${item.artworkId}`} className="flex justify-center">
+              <div className="relative w-100 h-96">
+                {/* trash icon top-right */}
                 <button
                   onClick={() =>
-                    removeMutation.mutate({ artworkId: item.artworkId, source: item.source })
+                    removeMutation.mutate({
+                      artworkId: item.artworkId,
+                      source: item.source,
+                    })
                   }
-                  className="ml-auto text-red-500 hover:text-red-700"
+                  className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1 z-10 cursor-pointer"
                 >
-                  <ImBin />
+                  <ImBin className="w-4 h-4" />
                 </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
-      <div className="mt-6">
-        <Link to="/collections" className="text-blue-600 hover:underline">
-          ← Back to all collections
-        </Link>
-      </div>
+                {/* card fills the wrapper */}
+                <div className="w-full h-full">
+                  <ArtworkCard artwork={artwork} showSource={false} />
+                </div>
+              </div>
+            </SwiperSlide>
+          );
+        })}
+      </Swiper>
     </div>
   );
 }
