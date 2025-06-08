@@ -13,7 +13,6 @@ import type { CombinedArtwork } from "../types/artwork";
 import ArtworkCard from "../components/ArtworkCard";
 
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { ImBin } from "react-icons/im";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y } from "swiper/modules";
 import type { NavigationOptions } from "swiper/modules/navigation";
@@ -91,40 +90,35 @@ export default function CollectionDetailPage() {
         className="relative h-90 w-full bg-cover bg-center mb-8 filter grayscale brightness-75 contrast-125"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
-        {/* dark overlay */}
         <div className="absolute inset-0 bg-black/40" />
-
-        {/* banner content */}
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center text-white">
-          <h1 className="text-4xl lg:text-5xl font-heading">{collection.name}</h1>
+          <h1 className="text-4xl lg:text-5xl font-heading">{collection!.name}</h1>
           <p className="mt-2 max-w-xl text-lg">A curated look into your personal collection.</p>
         </div>
       </section>
-      {/* Global overrides: wider pagination dashes */}
-      <style>{`
-        .swiper-pagination-bullet {
-          width: 2rem !important;
-          height: 0.25rem !important;
-          background: none !important;
-          margin: 0 0.25rem !important;
-        }
-        .swiper-pagination-bullet:after {
-          content: '';
-          display: block;
-          width: 100%;
-          height: 100%;
-          background: #fff;
-          border-radius: 9999px;
-        }
-      `}</style>
 
-      {/* Hero banner above title */}
-      <div className="mb-8"></div>
+      {/* wider “dash” pagination bullets */}
+      <style>{`
+          .swiper-pagination-bullet {
+            width: 2rem !important;
+            height: 0.25rem !important;
+            background: none !important;
+            margin: 0 0.25rem !important;
+          }
+          .swiper-pagination-bullet:after {
+            content: '';
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 9999px;
+          }
+        `}</style>
 
       {/* Centered title with decorative lines */}
       <div className="flex items-center justify-center mb-4">
         <div className="h-px flex-grow bg-gray-600" />
-        <h2 className="px-6 text-3xl font-semibold uppercase tracking-wider">{collection.name}</h2>
+        <h2 className="px-6 text-3xl font-semibold uppercase tracking-wider">{collection!.name}</h2>
         <div className="h-px flex-grow bg-gray-600" />
       </div>
 
@@ -135,7 +129,7 @@ export default function CollectionDetailPage() {
         </Link>
       </div>
 
-      {/* Custom Prev / Next buttons inset 1rem */}
+      {/* Prev / Next buttons */}
       <button
         ref={prevRef}
         className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-4 bg-black/70 rounded-full text-white hover:bg-black/90 cursor-pointer"
@@ -149,6 +143,7 @@ export default function CollectionDetailPage() {
         <FiChevronRight size={36} />
       </button>
 
+      {/* Inset the Swiper viewport so no clipping */}
       <div className="pl-16 pr-16">
         <Swiper
           className="relative pb-8 overflow-visible"
@@ -184,6 +179,7 @@ export default function CollectionDetailPage() {
               );
             }
 
+            // build artwork for this slide
             const details = q.data;
             const isMet = item.source === "met";
             const artwork: CombinedArtwork = {
@@ -221,17 +217,21 @@ export default function CollectionDetailPage() {
 
             return (
               <SwiperSlide key={`${item.source}-${item.artworkId}`} className="flex justify-center">
-                <div className="relative w-11/12 max-w-sm min-h-[24rem] bg-gray-800 rounded-lg overflow-visible shadow-lg transition-transform duration-300 hover:scale-105 hover:shadow-xl">
-                  <button
-                    onClick={() =>
-                      removeMutation.mutate({ artworkId: item.artworkId, source: item.source })
-                    }
-                    className="absolute top-3 right-3 z-10 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 cursor-pointer"
-                  >
-                    <ImBin className="w-5 h-5" />
-                  </button>
-                  <div className="w-full h-full p-4">
-                    <ArtworkCard artwork={artwork} showSource={false} />
+                <div className="relative overflow-visible transition-transform duration-300 hover:scale-105">
+                  {/* delete button */}
+
+                  {/* The card itself */}
+                  <div className="w-11/12 max-w-sm shadow-lg rounded-lg overflow-hidden">
+                    <ArtworkCard
+                      artwork={artwork}
+                      showSource={false}
+                      onRemove={() =>
+                        removeMutation.mutate({
+                          artworkId: item.artworkId,
+                          source: item.source,
+                        })
+                      }
+                    />
                   </div>
                 </div>
               </SwiperSlide>
