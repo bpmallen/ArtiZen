@@ -227,12 +227,20 @@ export default function CollectionDetailPage() {
                     <ArtworkCard
                       artwork={artwork}
                       showSource={false}
-                      onRemove={() =>
-                        removeMutation.mutate({
-                          artworkId: item.artworkId,
-                          source: item.source,
-                        })
-                      }
+                      onRemove={() => {
+                        if (
+                          window.confirm(
+                            `Are you sure you want to remove “${artwork.title}” from “${
+                              collection!.name
+                            }”?`
+                          )
+                        ) {
+                          removeMutation.mutate({
+                            artworkId: item.artworkId,
+                            source: item.source,
+                          });
+                        }
+                      }}
                     />
                   </div>
                 </div>
