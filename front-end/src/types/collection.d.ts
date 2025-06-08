@@ -5,6 +5,7 @@ export interface CollectionItem {
 }
 
 export interface Collection {
+  _id: string;
   name: string;
   items: CollectionItem[];
 }
