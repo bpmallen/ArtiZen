@@ -98,26 +98,30 @@
   overflow: visible !important;
 }
 
-/* 2) Make absolutely‐positioned navigation always on top of slides */
-.swiper-button-next,
-.swiper-button-prev {
-  display: none;
+.swiper-button-prev,
+.swiper-button-next {
+  display: none !important;
 }
 
 @media (min-width: 640px) {
   .swiper-button-prev,
   .swiper-button-next {
-    display: block;
-    color: white; /* ensure visible */
-    background: rgba(0, 0, 0, 0.6);
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 9999px;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    color: white !important;
+    cursor: pointer;
+    transition: background-color 0.2s;
   }
-}
 
-/* 3) Re-enforce clickability if something else is stealing pointer events */
-.swiper-button-next,
-.swiper-button-prev {
-  pointer-events: auto !important;
+  .swiper-button-prev {
+    left: 1rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
+  .swiper-button-next {
+    right: 1rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+  }
 }

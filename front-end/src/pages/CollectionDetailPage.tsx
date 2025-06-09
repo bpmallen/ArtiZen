@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { useCollections } from "../hooks/useCollections";
+import { apiClient } from "../services/apiClient";
 import {
   useQueries,
   useMutation,
@@ -16,22 +17,14 @@ import ArtworkCard from "../components/ArtworkCard";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, A11y } from "swiper/modules";
-import type { NavigationOptions } from "swiper/types";
+import type { Swiper as SwiperInstance } from "swiper/types";
 import { assetUrl } from "../cloudinary";
-
-const bgImage = assetUrl("chris-czermak-PamFFHL6fVY-unsplash_onknte", "1749423015", "jpg");
 
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-import { apiClient } from "../services/apiClient";
-import { useMemo, useRef } from "react";
-
-interface RemoveItemArgs {
-  artworkId: string;
-  source: "met" | "harvard";
-}
+const bgImage = assetUrl("chris-czermak-PamFFHL6fVY-unsplash_onknte", "1749423015", "jpg");
 
 export default function CollectionDetailPage() {
   const { currentUser } = useAuth();
@@ -41,22 +34,11 @@ export default function CollectionDetailPage() {
   const { data: collections = [], isLoading: colsLoading } = useCollections();
   const collection = collections.find((c) => c.name === collectionName);
   const items = useMemo(() => (collection ? collection.items : []), [collection]);
-  const pagedItems = items;
 
-  const prevRef = useRef<HTMLButtonElement>(null);
-  const nextRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    // only run once, after first render
-    if (prevRef.current && nextRef.current) {
-      // force Swiper to re-init nav on the real DOM nodes
-      const event = new Event("resize");
-      window.dispatchEvent(event);
-    }
-  }, []);
+  const swiperRef = useRef<SwiperInstance | null>(null);
 
   const detailQueries = useQueries({
-    queries: pagedItems.map((item) => ({
+    queries: items.map((item) => ({
       queryKey: [item.source, item.artworkId] as const,
       queryFn: () =>
         item.source === "met" ? fetchMetById(item.artworkId) : fetchHarvardById(item.artworkId),
@@ -64,24 +46,23 @@ export default function CollectionDetailPage() {
     })),
   }) as UseQueryResult<MetDetail | HarvardDetail, Error>[];
 
-  const removeMutation = useMutation<void, Error, RemoveItemArgs>({
-    mutationFn: async ({ artworkId, source }) => {
-      await apiClient.delete(
-        `/users/${
-          currentUser!._id
-        }/collections/${collectionName}/items/${artworkId}?source=${source}`
-      );
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["collections", currentUser!._id] });
-    },
-  });
+  const removeMutation = useMutation<void, Error, { artworkId: string; source: "met" | "harvard" }>(
+    {
+      mutationFn: async ({ artworkId, source }) => {
+        await apiClient.delete(
+          `/users/${
+            currentUser!._id
+          }/collections/${collectionName}/items/${artworkId}?source=${source}`
+        );
+      },
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["collections", currentUser!._id] });
+      },
+    }
+  );
 
   if (colsLoading) return <p className="p-4">Loading collections…</p>;
   if (!collection)
-    // const bgImage =
-    //   "https://images.unsplash.com/photo-1601887389937-0b02c26b602c?q=80&w=2523&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
-
     return (
       <div className="p-4">
         <p>Collection “{collectionName}” not found.</p>
@@ -112,70 +93,44 @@ export default function CollectionDetailPage() {
         <div className="h-px flex-grow bg-gray-600" />
       </div>
 
-      {/* Back link */}
+      {/* Back link + mobile arrows */}
       <div className="text-center mb-8">
         <Link to="/collections" className="text-gray-400 hover:text-white">
           ← Back to Collections
         </Link>
-        {/* Mobile‐only arrows under the link */}
         <div className="flex justify-center space-x-4 mt-4 sm:hidden">
           <button
-            ref={prevRef}
-            className="p-3 bg-black/70 rounded-full text-white hover:bg-black/90 z-10"
+            onClick={() => swiperRef.current?.slidePrev()}
+            className="p-3 bg-black/70 rounded-full text-white hover:bg-black/90"
           >
             <FiChevronLeft size={28} />
           </button>
           <button
-            ref={nextRef}
-            className="p-3 bg-black/70 rounded-full text-white hover:bg-black/90 z-10"
+            onClick={() => swiperRef.current?.slideNext()}
+            className="p-3 bg-black/70 rounded-full text-white hover:bg-black/90"
           >
             <FiChevronRight size={28} />
           </button>
         </div>
       </div>
 
-      {/* Carousel + Arrows */}
+      {/* Carousel with Swiper’s built-in arrows on desktop */}
       <div className="relative">
         <Swiper
+          onSwiper={(sw) => (swiperRef.current = sw)}
           modules={[Navigation, Pagination, A11y]}
-          className="relative pb-8 overflow-visible"
-          wrapperClass="overflow-visible"
-          navigation={{
-            prevEl: prevRef.current!,
-            nextEl: nextRef.current!,
-          }}
+          navigation={true}
           pagination={{ clickable: true }}
           centeredSlidesBounds
           autoHeight
           breakpoints={{
-            0: {
-              slidesPerView: 1,
-              spaceBetween: 24,
-              slidesOffsetBefore: 0,
-              slidesOffsetAfter: 0,
-            },
-            640: {
-              slidesPerView: 2,
-              spaceBetween: 24,
-              slidesOffsetBefore: 24,
-              slidesOffsetAfter: 24,
-            },
-            1024: {
-              slidesPerView: 3,
-              spaceBetween: 24,
-              slidesOffsetBefore: 24,
-              slidesOffsetAfter: 24,
-            },
+            0: { slidesPerView: 1, spaceBetween: 24 },
+            640: { slidesPerView: 2, spaceBetween: 24 },
+            1024: { slidesPerView: 3, spaceBetween: 24 },
           }}
-          onBeforeInit={(swiper) => {
-            const nav = swiper.params.navigation as NavigationOptions;
-            nav.prevEl = prevRef.current!;
-            nav.nextEl = nextRef.current!;
-            swiper.navigation.init();
-            swiper.navigation.update();
-          }}
+          className="relative pb-8 overflow-visible"
         >
-          {pagedItems.map((item, idx) => {
+          {items.map((item, idx) => {
             const q = detailQueries[idx];
             if (q.isLoading || !q.data) {
               return (
@@ -247,22 +202,6 @@ export default function CollectionDetailPage() {
             );
           })}
         </Swiper>
-
-        {/* Prev arrow */}
-        <button
-          ref={prevRef}
-          className="hidden sm:flex pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/70 rounded-full text-white hover:bg-black/90"
-        >
-          <FiChevronLeft size={28} />
-        </button>
-
-        {/* Next arrow */}
-        <button
-          ref={nextRef}
-          className="hidden sm:flex pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/70 rounded-full text-white hover:bg-black/90"
-        >
-          <FiChevronRight size={28} />
-        </button>
       </div>
     </div>
   );
