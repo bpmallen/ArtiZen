@@ -21,6 +21,8 @@ module.exports = {
       fontSize: {
         "7xl": ["5rem", { lineHeight: "1.1" }],
       },
+      ringColor: ["focus-visible"],
+      ringWidth: ["focus-visible"],
     },
   },
   plugins: [],

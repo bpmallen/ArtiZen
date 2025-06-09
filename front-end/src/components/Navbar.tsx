@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { RxAvatar } from "react-icons/rx";
 import { useAuth } from "../contexts/useAuth";
 
@@ -10,6 +11,26 @@ export interface NavBarProps {
 export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
   const { isAuthenticated, currentUser, logout } = useAuth();
   const avatarSrc = currentUser?.profileImageUrl;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
+
+  const toggleMenu = () => setMenuOpen((o) => !o);
+
+  useEffect(() => {
+    const onClickOutside = (e: MouseEvent) => {
+      if (menuOpen && menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [menuOpen]);
+
+  const handleNav = (to: string) => {
+    navigate(to);
+    setMenuOpen(false);
+  };
 
   return (
     <nav
@@ -47,21 +68,17 @@ export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
         </Link>
 
         {/* Avatar + Dropdown */}
-        <div className="relative group flex items-center space-x-3">
-          {isAuthenticated && currentUser?.username && (
-            <span
-              className="text-white font-roboto"
-              aria-label={`Logged in as ${currentUser.username}`}
-            >
-              {currentUser.username}
-            </span>
-          )}
-
-          {/* Make avatar a button or link for keyboard focus */}
+        <div className="relative" ref={menuRef}>
           <button
-            className="focus:outline-none focus:ring-2 focus:ring-primary"
+            onClick={toggleMenu}
+            aria-haspopup="true"
+            aria-expanded={menuOpen}
+            className="flex items-center space-x-3 focus:outline-none focus:ring-2 focus:ring-primary"
             aria-label={isAuthenticated ? "Open user menu" : "Open login menu"}
           >
+            {isAuthenticated && currentUser?.username && (
+              <span className="text-white font-roboto">{currentUser.username}</span>
+            )}
             {avatarSrc ? (
               <img
                 src={avatarSrc}
@@ -73,42 +90,39 @@ export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
             )}
           </button>
 
-          {/* Dropdown menu */}
           <div
-            className="
+            className={`
               font-roboto
-              absolute
-              top-full
-              right-0
-              mt-2
-              w-48
-              bg-black border border-gray-700 rounded shadow-lg
-              invisible group-hover:visible opacity-0 group-hover:opacity-100
-              transition-all duration-150 z-50
-            "
+              absolute top-full right-0 mt-2 w-48 bg-black border border-gray-700 rounded shadow-lg
+              transition-opacity duration-150 z-50
+              ${menuOpen ? "visible opacity-100" : "invisible opacity-0"}
+            `}
             role="menu"
             aria-label="User menu"
           >
             {isAuthenticated ? (
               <>
-                <Link
-                  to="/profile"
+                <button
+                  onClick={() => handleNav("/profile")}
                   role="menuitem"
-                  className="block px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
+                  className="block w-full text-left px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
                 >
                   Profile
-                </Link>
-                <Link
-                  to="/collections"
+                </button>
+                <button
+                  onClick={() => handleNav("/collections")}
                   role="menuitem"
-                  className="block px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
+                  className="block w-full text-left px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
                 >
                   My Collections
-                </Link>
+                </button>
                 <button
-                  onClick={logout}
+                  onClick={() => {
+                    logout();
+                    setMenuOpen(false);
+                  }}
                   role="menuitem"
-                  className="w-full text-left px-4 py-2 text-red-400 hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
+                  className="block w-full text-left px-4 py-2 text-red-400 hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
                 >
                   Logout
                 </button>
@@ -116,16 +130,22 @@ export default function NavBar({ onOpenLogin, onOpenRegister }: NavBarProps) {
             ) : (
               <>
                 <button
-                  onClick={onOpenLogin}
+                  onClick={() => {
+                    onOpenLogin();
+                    setMenuOpen(false);
+                  }}
                   role="menuitem"
-                  className="w-full text-left px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
+                  className="block w-full text-left px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
                 >
                   Login
                 </button>
                 <button
-                  onClick={onOpenRegister}
+                  onClick={() => {
+                    onOpenRegister();
+                    setMenuOpen(false);
+                  }}
                   role="menuitem"
-                  className="w-full text-left px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
+                  className="block w-full text-left px-4 py-2 text-white hover:bg-gray-800 focus:bg-gray-800 focus:outline-none"
                 >
                   Register
                 </button>

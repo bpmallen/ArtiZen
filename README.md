@@ -20,7 +20,8 @@ A web-app to explore and curate virtual exhibitions combining collections from m
   - **Authentication:** JWT, bcrypt-hashed passwords
   - **Protected routes:** Express middleware
   - **APIs:** The MET Collection API, Harvard Art Museums API
-  - **Deployment:** Netlify
+  - **Frontend Deployment:** Netlify
+  - **Backend Deployment:** Render
 
 ---
 
@@ -47,7 +48,7 @@ A web-app to explore and curate virtual exhibitions combining collections from m
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/your-username/exhibition-curation.git
+   git clone https://github.com/bpmallen/exhibition-curation.git
    cd exhibition-curation
    ```
 
