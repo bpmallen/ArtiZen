@@ -12,7 +12,7 @@ const bgImage = assetUrl("jack-hunter-1L4E_lsIb9Q-unsplash_oycu7r", "1749423015"
 export default function ArtworkListPage() {
   type TabType = "met" | "harvard" | "all";
   const [tab, setTab] = useState<TabType>("met");
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false); // ← Added
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // MET state
   const [metFilters, setMetFilters] = useState<MetFilters>({});
@@ -112,6 +112,8 @@ export default function ArtworkListPage() {
       <section
         className="relative h-90 w-full bg-cover bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
+        role="banner"
+        aria-label="Discover & Curate header"
       >
         {/* dark overlay */}
         <div className="absolute inset-0 bg-black/40" />
@@ -127,7 +129,7 @@ export default function ArtworkListPage() {
 
       <section className="flex bg-black text-white min-h-screen">
         {/* DESKTOP SIDEBAR (hidden on mobile) */}
-        <div className="hidden sm:block w-72">
+        <div className="hidden sm:block w-72" aria-label="Filter sidebar" role="complementary">
           <Sidebar
             className="w-72"
             tab={tab}
@@ -148,10 +150,17 @@ export default function ArtworkListPage() {
         {/* MAIN CONTENT */}
         <div className="flex-1 max-w-7xl mx-auto px-4 py-8">
           {/* Tabs */}
-          <div className="flex space-x-6 mb-8 border-b border-text-light">
+          <div
+            className="flex space-x-6 mb-8 border-b border-text-light"
+            role="tablist"
+            aria-label="Select artwork source"
+          >
             {(["met", "harvard", "all"] as TabType[]).map((t) => (
               <button
                 key={t}
+                role="tab"
+                aria-selected={t === tab}
+                tabIndex={t === tab ? 0 : -1}
                 onClick={() => {
                   setTab(t);
                   setMetPage(0);
@@ -168,9 +177,12 @@ export default function ArtworkListPage() {
               </button>
             ))}
           </div>
-
           {/* Search Bar + MOBILE FILTER TOGGLE */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-6">
+          <div
+            className="flex flex-col sm:flex-row sm:items-center gap-2 mb-6"
+            role="search"
+            aria-label="Artwork search"
+          >
             <div className="flex-grow flex gap-2">
               <input
                 className="flex-grow border border-text-light rounded-l-lg px-3 py-2 focus:ring-2 focus:ring-primary"
@@ -180,6 +192,13 @@ export default function ArtworkListPage() {
                     : tab === "harvard"
                     ? "Search Harvard…"
                     : "Search both…"
+                }
+                aria-label={
+                  tab === "met"
+                    ? "Search MET artworks"
+                    : tab === "harvard"
+                    ? "Search Harvard artworks"
+                    : "Search all artworks"
                 }
                 value={tab === "harvard" ? harvInput : metInput}
                 onChange={(e) =>
@@ -201,6 +220,7 @@ export default function ArtworkListPage() {
                     setAllPage(0);
                   }
                 }}
+                aria-label="Submit search"
               >
                 Search
               </button>
@@ -210,14 +230,20 @@ export default function ArtworkListPage() {
             <button
               className="sm:hidden text-primary font-medium"
               onClick={() => setMobileFiltersOpen((o) => !o)}
+              aria-expanded={mobileFiltersOpen}
+              aria-controls="mobile-filters"
             >
-              {mobileFiltersOpen ? "Hide Filters ▲" : "Show Filters ▼"} {/* ← Added */}
+              {mobileFiltersOpen ? "Hide Filters ▲" : "Show Filters ▼"}
             </button>
           </div>
-
           {/* MOBILE FILTER DROPDOWN */}
           {mobileFiltersOpen && (
-            <div className="sm:hidden mb-6 p-4 bg-gray-900 rounded-lg">
+            <div
+              id="mobile-filters"
+              className="sm:hidden mb-6 p-4 bg-gray-900 rounded-lg"
+              role="region"
+              aria-label="Mobile filter panel"
+            >
               <Sidebar
                 tab={tab}
                 metFilters={metFilters}
@@ -235,32 +261,42 @@ export default function ArtworkListPage() {
               />
             </div>
           )}
-
           {/* Results Grid */}
-          {error && <p className="text-center text-red-600">Error: {error.message}</p>}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {error && <p role="alert">Error: {error.message}</p>} {/* ↓ added */}
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            role="grid"
+            aria-label="Artwork results"
+          >
             {loading
               ? Array.from({ length: PER_API_PAGE }).map((_, i) => (
                   <div
                     key={i}
                     className="w-full h-[28rem] aspect-square rounded-lg bg-gray-800 skeleton"
+                    role="row"
                   />
                 ))
               : artworks.map((art) => (
                   <div
                     key={`${art.source}-${art.id}`}
                     className="p-2 transition-transform duration-200 hover:scale-105"
+                    role="row"
+                    aria-label={`Artwork: ${art.title}`}
                   >
                     <ArtworkCard artwork={art} showSource={tab === "all"} />
                   </div>
                 ))}
           </div>
-
           {/* Pagination (5 at a time) */}
-          <div className="mt-8 flex justify-center items-center gap-3">
+          <nav
+            className="mt-8 flex justify-center items-center gap-3"
+            role="navigation"
+            aria-label="Pagination navigation"
+          >
             <button
               onClick={handlePrev}
               disabled={pageParam === 0}
+              aria-disabled={pageParam === 0}
               className="px-3 py-1 rounded-lg border border-white bg-black text-white hover:bg-gray-700 disabled:opacity-50"
             >
               Prev
@@ -282,6 +318,7 @@ export default function ArtworkListPage() {
                     else if (tab === "harvard") setHarvPage(pIndex);
                     else setAllPage(pIndex);
                   }}
+                  aria-current={pIndex === pageParam ? "page" : undefined}
                   className={`px-3 py-1 rounded-lg border ${
                     pIndex === pageParam
                       ? "bg-white text-black border-black"
@@ -295,11 +332,12 @@ export default function ArtworkListPage() {
             <button
               onClick={handleNext}
               disabled={pageParam + 1 >= totalPages}
+              aria-disabled={pageParam + 1 >= totalPages}
               className="px-3 py-1 rounded-lg border border-white bg-black text-white hover:bg-gray-700 disabled:opacity-50"
             >
               Next
             </button>
-          </div>
+          </nav>
         </div>
       </section>
     </>

@@ -43,12 +43,20 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h2 className="text-3xl font-semibold mb-6">My Profile</h2>
+      <h2 className="text-3xl font-semibold mb-6" role="heading" aria-level={1}>
+        My Profile
+      </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-5"
+        role="form"
+        aria-label="Edit profile image URL"
+      >
         <div>
           <label className="block text-gray-700 font-medium mb-1">Profile Image URL</label>
           <input
+            id="profile-image-input"
             type="text"
             value={imageUrl}
             onChange={(e) => setImageUrl(e.target.value)}
@@ -57,13 +65,15 @@ export default function ProfilePage() {
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" role="group" aria-label="Form actions">
           <button
             type="submit"
             disabled={loading}
             className={`px-4 py-2 rounded text-white ${
               loading ? "bg-gray-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
             }`}
+            aria-busy={loading}
+            aria-label={loading ? "Saving profile image" : "Save profile image"}
           >
             {loading ? "Saving…" : "Save"}
           </button>
@@ -77,15 +87,20 @@ export default function ProfilePage() {
               }
             }}
             className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700"
+            aria-label="Cancel changes"
           >
             Cancel
           </button>
         </div>
 
-        {failed && <p className="text-red-500 text-sm">Update failed. Please try again.</p>}
+        {failed && (
+          <p className="text-red-500 text-sm" role="alert">
+            Update failed. Please try again.
+          </p>
+        )}
 
         {imageUrl.trim() && (
-          <div className="mt-6">
+          <div className="mt-6" role="region" aria-label="Avatar preview">
             <p className="text-gray-700 mb-2 font-medium">Preview:</p>
             <img
               src={imageUrl}

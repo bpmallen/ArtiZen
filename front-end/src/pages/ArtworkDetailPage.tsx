@@ -68,15 +68,20 @@ export default function ArtworkDetailPage() {
   const artistBio = isMet ? met.artistDisplayBio : null;
 
   return (
-    <div className="min-h-screen bg-black text-white font-roboto">
+    <div className="min-h-screen bg-black text-white font-roboto" role="main">
       {/* Hero Banner */}
       <section
         className="relative h-80 w-full bg-cover bg-center mb-6 filter grayscale brightness-75 contrast-125"
         style={{ backgroundImage: `url(${bgImage})` }}
+        role="banner"
+        aria-label="Artwork detail header"
       >
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-black/40" aria-hidden="true" />
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center">
-          <h1 className="text-4xl lg:text-5xl font-heading uppercase tracking-wide text-white">
+          <h1
+            className="text-4xl lg:text-5xl font-heading uppercase tracking-wide text-white"
+            id="artwork-detail-title"
+          >
             Artwork Details
           </h1>
           <p className="mt-2 max-w-xl text-lg text-white">
@@ -86,19 +91,23 @@ export default function ArtworkDetailPage() {
       </section>
 
       <div className="max-w-4xl mx-auto p-6 space-y-6">
-        <Link to="/" className="text-slate-400 hover:text-slate-200">
+        <Link to="/" className="text-slate-400 hover:text-slate-200" aria-label="Back to gallery">
           ← Back to Gallery
         </Link>
 
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className="flex flex-col md:flex-row gap-6" aria-labelledby="artwork-detail-title">
           {imageUrl ? (
             <img
               src={imageUrl}
-              alt={title || ""}
+              alt={title || "Artwork image"}
               className="w-full md:w-1/2 rounded shadow-lg object-contain"
             />
           ) : (
-            <div className="w-full md:w-1/2 h-64 bg-slate-900 flex items-center justify-center">
+            <div
+              className="w-full md:w-1/2 h-64 bg-slate-900 flex items-center justify-center"
+              role="img"
+              aria-label="No image available"
+            >
               <p className="text-slate-400">No image available</p>
             </div>
           )}
@@ -108,27 +117,48 @@ export default function ArtworkDetailPage() {
 
             <p>
               <span className="font-bold">Date:</span>
-              <span className="italic font-light text-slate-300">
+              <span
+                className="italic font-light text-slate-300"
+                aria-label={`Date: ${dateString || "Unknown"}`}
+              >
                 {` ${dateString || "Unknown"}`}
               </span>
             </p>
 
             <p>
               <span className="font-bold">Artist:</span>
-              <span className="italic font-light text-slate-300">{` ${artistDisplay}`}</span>
+              <span
+                className="italic font-light text-slate-300"
+                aria-label={`Artist: ${artistDisplay}`}
+              >{` ${artistDisplay}`}</span>
             </p>
-            {artistBio && <p className="italic font-light text-slate-300">{artistBio}</p>}
+            {artistBio && (
+              <p
+                className="italic font-light text-slate-300"
+                aria-label={`Artist biography: ${artistBio}`}
+              >
+                {artistBio}
+              </p>
+            )}
 
             <p>
               <span className="font-bold">Medium:</span>
-              <span className="italic font-light text-slate-300">
+              <span
+                className="italic font-light text-slate-300"
+                aria-label={`Medium: ${isMet ? met.medium || "Unknown" : harv.medium || "Unknown"}`}
+              >
                 {` ${isMet ? met.medium || "Unknown" : harv.medium || "Unknown"}`}
               </span>
             </p>
 
             <p>
               <span className="font-bold">Culture:</span>
-              <span className="italic font-light text-slate-300">
+              <span
+                className="italic font-light text-slate-300"
+                aria-label={`Culture: ${
+                  isMet ? met.culture || "Unknown" : harv.culture || "Unknown"
+                }`}
+              >
                 {` ${isMet ? met.culture || "Unknown" : harv.culture || "Unknown"}`}
               </span>
             </p>
@@ -136,7 +166,10 @@ export default function ArtworkDetailPage() {
             {(isMet ? met.dimensions : harv.dimensions) && (
               <p>
                 <span className="font-bold">Dimensions:</span>
-                <span className="italic font-light text-slate-300">
+                <span
+                  className="italic font-light text-slate-300"
+                  aria-label={`Dimensions: ${isMet ? met.dimensions : harv.dimensions}`}
+                >
                   {` ${isMet ? met.dimensions : harv.dimensions}`}
                 </span>
               </p>
@@ -145,7 +178,10 @@ export default function ArtworkDetailPage() {
             {(isMet ? met.creditLine : harv.creditline) && (
               <p>
                 <span className="font-bold">Credit Line:</span>
-                <span className="italic font-light text-slate-300">
+                <span
+                  className="italic font-light text-slate-300"
+                  aria-label={`Credit line: ${isMet ? met.creditLine : harv.creditline}`}
+                >
                   {` ${isMet ? met.creditLine : harv.creditline}`}
                 </span>
               </p>
@@ -156,13 +192,19 @@ export default function ArtworkDetailPage() {
                 {met.department && (
                   <p>
                     <span className="font-bold">Department:</span>
-                    <span className="italic font-light text-slate-300">{` ${met.department}`}</span>
+                    <span
+                      className="italic font-light text-slate-300"
+                      aria-label={`Department: ${met.department}`}
+                    >{` ${met.department}`}</span>
                   </p>
                 )}
                 {met.classification && (
                   <p>
                     <span className="font-bold">Classification:</span>
-                    <span className="italic font-light text-slate-300">
+                    <span
+                      className="italic font-light text-slate-300"
+                      aria-label={`Classification: ${met.classification}`}
+                    >
                       {` ${met.classification}`}
                     </span>
                   </p>
@@ -170,7 +212,10 @@ export default function ArtworkDetailPage() {
                 {met.objectName && (
                   <p>
                     <span className="font-bold">Object Name:</span>
-                    <span className="italic font-light text-slate-300">{` ${met.objectName}`}</span>
+                    <span
+                      className="italic font-light text-slate-300"
+                      aria-label={`Object Name: ${met.objectName}`}
+                    >{` ${met.objectName}`}</span>
                   </p>
                 )}
                 {/* add any other MET-specific fields similarly */}
@@ -180,7 +225,10 @@ export default function ArtworkDetailPage() {
                 {harv.department && (
                   <p>
                     <span className="font-bold">Department:</span>
-                    <span className="italic font-light text-slate-300">
+                    <span
+                      className="italic font-light text-slate-300"
+                      aria-label={`Department: ${harv.department}`}
+                    >
                       {` ${harv.department}`}
                     </span>
                   </p>
@@ -188,7 +236,10 @@ export default function ArtworkDetailPage() {
                 {harv.classification && (
                   <p>
                     <span className="font-bold">Classification:</span>
-                    <span className="italic font-light text-slate-300">
+                    <span
+                      className="italic font-light text-slate-300"
+                      aria-label={`Classification: ${harv.classification}`}
+                    >
                       {` ${harv.classification}`}
                     </span>
                   </p>
@@ -204,6 +255,8 @@ export default function ArtworkDetailPage() {
             <button
               onClick={() => setShowModal(true)}
               className="mt-4 px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded"
+              aria-haspopup="dialog"
+              aria-controls="create-collection-modal"
             >
               Add to Collection
             </button>

@@ -37,6 +37,8 @@ export default function CollectionsPage() {
     <div className="min-h-screen bg-black text-white">
       {/* Hero Banner */}
       <section
+        role="banner"
+        aria-label="My Collections banner"
         className="relative h-90 w-full bg-cover bg-center mb-6 filter grayscale brightness-75 contrast-125"
         style={{ backgroundImage: `url(${bgImage})` }}
       >
@@ -55,7 +57,7 @@ export default function CollectionsPage() {
       <div className="max-w-3xl mx-auto px-4">
         {/* Back */}
         <div className="mb-2 text-center">
-          <Link to="/" className="text-slate-400 hover:text-slate-200">
+          <Link to="/" className="text-slate-400 hover:text-slate-200" aria-label="Back to Gallery">
             ← Back to Gallery
           </Link>
         </div>
@@ -63,17 +65,27 @@ export default function CollectionsPage() {
         {/* Title */}
         <div className="flex items-center justify-center mb-4">
           <div className="h-px flex-grow bg-slate-600" />
-          <h2 className="px-4 text-2xl font-semibold uppercase tracking-wide">Collections</h2>
+          <h2
+            className="px-4 text-2xl font-semibold uppercase tracking-wide"
+            role="heading" /* ARIA: heading role */
+            aria-level={2}
+          >
+            Collections
+          </h2>
           <div className="h-px flex-grow bg-slate-600" />
         </div>
 
         {/* List */}
-        <div className="space-y-4 mb-4 font-roboto">
+        <div className="space-y-4 mb-4 font-roboto" role="list" aria-label="Your collections">
           {collections.length === 0 ? (
             <p className="text-center">No collections yet.</p>
           ) : (
             collections.map((col) => (
-              <div key={col.name} className="grid grid-cols-[1fr_4rem_3rem] items-center gap-4">
+              <div
+                key={col.name}
+                className="grid grid-cols-[1fr_4rem_3rem] items-center gap-4"
+                role="listitem"
+              >
                 {/* Constrain the link width so buttons sit close by */}
                 {editing === col.name ? (
                   <>
@@ -113,6 +125,7 @@ export default function CollectionsPage() {
                     <Link
                       to={encodeURIComponent(col.name)}
                       className="text-slate-300 hover:text-slate-100 truncate"
+                      aria-label={`View collection ${col.name} (${col.items.length} items)`}
                     >
                       {col.name} ({col.items.length})
                     </Link>
@@ -134,7 +147,7 @@ export default function CollectionsPage() {
                       title="Delete"
                       className="w-full px-2 py-1 bg-slate-600 rounded hover:bg-slate-500 flex items-center justify-center"
                     >
-                      <ImBin className="w-4 h-4 text-red-300" />
+                      <ImBin className="w-4 h-4 text-red-300" aria-hidden="true" />
                     </button>
                   </>
                 )}
@@ -151,6 +164,7 @@ export default function CollectionsPage() {
             className="border border-slate-600 rounded px-2 py-1 bg-slate-800 text-white placeholder-slate-500 flex-grow"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
+            aria-label="New collection name"
           />
           <button
             disabled={!newName.trim()}
@@ -166,6 +180,7 @@ export default function CollectionsPage() {
             className={`px-3 py-1 rounded text-white text-sm ${
               newName.trim() ? "bg-slate-600 hover:bg-slate-500" : "bg-slate-700 cursor-not-allowed"
             }`}
+            aria-label="Create new collection"
           >
             Create
           </button>

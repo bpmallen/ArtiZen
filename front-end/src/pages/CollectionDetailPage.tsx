@@ -78,6 +78,8 @@ export default function CollectionDetailPage() {
       <section
         className="relative h-90 w-full bg-cover bg-center mb-8 filter grayscale brightness-75 contrast-125"
         style={{ backgroundImage: `url(${bgImage})` }}
+        role="banner"
+        aria-label={`Collection ${collection!.name} banner`}
       >
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 text-center text-white">
@@ -87,27 +89,43 @@ export default function CollectionDetailPage() {
       </section>
 
       {/* Decorative Title */}
-      <div className="flex items-center justify-center mb-4">
+      <div
+        className="flex items-center justify-center mb-4"
+        role="region"
+        aria-labelledby="collection-title"
+      >
         <div className="h-px flex-grow bg-gray-600" />
-        <h2 className="px-6 text-3xl font-semibold uppercase tracking-wider">{collection!.name}</h2>
+        <h2 className="px-6 text-3xl font-semibold uppercase tracking-wider" id="collection-title">
+          {collection!.name}
+        </h2>
         <div className="h-px flex-grow bg-gray-600" />
       </div>
 
       {/* Back link + mobile arrows */}
       <div className="text-center mb-8">
-        <Link to="/collections" className="text-gray-400 hover:text-white">
+        <Link
+          to="/collections"
+          className="text-gray-400 hover:text-white"
+          aria-label="Back to Collections"
+        >
           ← Back to Collections
         </Link>
-        <div className="flex justify-center space-x-4 mt-4 sm:hidden">
+        <div
+          className="flex justify-center space-x-4 mt-4 sm:hidden"
+          role="group"
+          aria-label="Carousel navigation mobile"
+        >
           <button
             onClick={() => swiperRef.current?.slidePrev()}
             className="p-3 bg-black/70 rounded-full text-white hover:bg-black/90"
+            aria-label="Previous artwork"
           >
             <FiChevronLeft size={28} />
           </button>
           <button
             onClick={() => swiperRef.current?.slideNext()}
             className="p-3 bg-black/70 rounded-full text-white hover:bg-black/90"
+            aria-label="Next artwork"
           >
             <FiChevronRight size={28} />
           </button>
@@ -115,7 +133,7 @@ export default function CollectionDetailPage() {
       </div>
 
       {/* Carousel with Swiper’s built-in arrows on desktop */}
-      <div className="relative">
+      <div className="relative" role="region" aria-label="Artwork carousel">
         <Swiper
           onSwiper={(sw) => (swiperRef.current = sw)}
           modules={[Navigation, Pagination, A11y]}
@@ -129,6 +147,7 @@ export default function CollectionDetailPage() {
             1024: { slidesPerView: 3, spaceBetween: 24 },
           }}
           className="relative pb-8 overflow-visible"
+          aria-live="polite"
         >
           {items.map((item, idx) => {
             const q = detailQueries[idx];
@@ -138,7 +157,10 @@ export default function CollectionDetailPage() {
                   key={`${item.source}-${item.artworkId}`}
                   className="flex justify-center"
                 >
-                  <div className="h-60 w-80 bg-gray-600 animate-pulse rounded-lg shadow-lg" />
+                  <div
+                    className="h-60 w-80 bg-gray-600 animate-pulse rounded-lg shadow-lg"
+                    aria-label="Loading artwork"
+                  />
                 </SwiperSlide>
               );
             }
@@ -179,7 +201,12 @@ export default function CollectionDetailPage() {
             };
 
             return (
-              <SwiperSlide key={`${item.source}-${item.artworkId}`} className="flex justify-center">
+              <SwiperSlide
+                key={`${item.source}-${item.artworkId}`}
+                className="flex justify-center"
+                role="group"
+                aria-label={`Slide ${idx + 1} of ${items.length}: ${artwork.title}`}
+              >
                 <div className="relative overflow-visible transition-transform duration-300 hover:scale-105">
                   <div className="w-80 max-w-sm shadow-lg rounded-lg overflow-hidden">
                     <ArtworkCard
