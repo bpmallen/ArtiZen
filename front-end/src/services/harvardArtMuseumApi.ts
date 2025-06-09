@@ -15,7 +15,7 @@ export async function fetchHarvardPage(
   pageSize: number,
   searchTerm: string,
   filters: HarvardFilters
-  // sort: "dateAsc" | "dateDesc"
+  sort: "dateAsc" | "dateDesc"
 ): Promise<{ artworks: CombinedArtwork[]; total: number }> {
   if (!HARVARD_API_KEY) {
     console.error("❌ Missing Harvard API key (VITE_HARVARD_API_KEY)");
