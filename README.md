@@ -26,7 +26,7 @@ A web-app to explore and curate virtual exhibitions combining collections from m
 
 ## 🚀 Live Demo
 
-**[View the live site →](https://your-deployment-url.com)**
+**[View the live site →](https://artizen-curation.netlify.app/)**
 
 ---
 
