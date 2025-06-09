@@ -68,7 +68,7 @@ export default function ArtworkDetailPage() {
   const artistBio = isMet ? met.artistDisplayBio : null;
 
   return (
-    <div className="min-h-screen bg-black text-white font-roboto" role="main">
+    <div className="min-h-screen bg-black text-white " role="main">
       {/* Hero Banner */}
       <section
         className="relative h-80 w-full bg-cover bg-center mb-6 filter grayscale brightness-75 contrast-125"
