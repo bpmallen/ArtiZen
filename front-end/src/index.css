@@ -34,9 +34,23 @@
   margin-top: 1rem !important;
   z-index: 20 !important;
 }
+.swiper-pagination-bullet {
+  width: 2rem !important;
+  height: 0.25rem !important;
+  background: none !important;
+  margin: 0 0.25rem !important;
+}
+.swiper-pagination-bullet:after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  border-radius: 9999px;
+}
 .swiper-wrapper {
   padding-left: 4rem;
-  padding-right: 4rem;
+  padding-right: 0;
 }
 @layer utilities {
   .bg-black {
@@ -73,4 +87,37 @@
   background-image: linear-gradient(to right, #303030 0%, #4a4a4a 50%, #303030 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+@media (max-width: 639px) {
+  .swiper-wrapper {
+    padding-left: 0;
+  }
+}
+.swiper {
+  overflow: visible !important;
+}
+
+/* 2) Make absolutely‐positioned navigation always on top of slides */
+.swiper-button-next,
+.swiper-button-prev {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .swiper-button-prev,
+  .swiper-button-next {
+    display: block;
+    color: white; /* ensure visible */
+    background: rgba(0, 0, 0, 0.6);
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+  }
+}
+
+/* 3) Re-enforce clickability if something else is stealing pointer events */
+.swiper-button-next,
+.swiper-button-prev {
+  pointer-events: auto !important;
 }

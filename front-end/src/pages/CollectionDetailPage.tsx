@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
 import { useCollections } from "../hooks/useCollections";
@@ -44,10 +45,15 @@ export default function CollectionDetailPage() {
 
   const prevRef = useRef<HTMLButtonElement>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
-  const navOptions = {
-    prevEl: prevRef.current,
-    nextEl: nextRef.current,
-  } as NavigationOptions;
+
+  useEffect(() => {
+    // only run once, after first render
+    if (prevRef.current && nextRef.current) {
+      // force Swiper to re-init nav on the real DOM nodes
+      const event = new Event("resize");
+      window.dispatchEvent(event);
+    }
+  }, []);
 
   const detailQueries = useQueries({
     queries: pagedItems.map((item) => ({
@@ -86,8 +92,8 @@ export default function CollectionDetailPage() {
     );
 
   return (
-    <div className="relative min-h-screen bg-black text-white p-6">
-      {/* ─── Hero Banner ─── */}
+    <div className="min-h-screen bg-black text-white px-6 pt-6 pb-6">
+      {/* Hero Banner */}
       <section
         className="relative h-90 w-full bg-cover bg-center mb-8 filter grayscale brightness-75 contrast-125"
         style={{ backgroundImage: `url(${bgImage})` }}
@@ -99,25 +105,7 @@ export default function CollectionDetailPage() {
         </div>
       </section>
 
-      {/* wider “dash” pagination bullets */}
-      <style>{`
-          .swiper-pagination-bullet {
-            width: 2rem !important;
-            height: 0.25rem !important;
-            background: none !important;
-            margin: 0 0.25rem !important;
-          }
-          .swiper-pagination-bullet:after {
-            content: '';
-            display: block;
-            width: 100%;
-            height: 100%;
-            background: #fff;
-            border-radius: 9999px;
-          }
-        `}</style>
-
-      {/* Centered title with decorative lines */}
+      {/* Decorative Title */}
       <div className="flex items-center justify-center mb-4">
         <div className="h-px flex-grow bg-gray-600" />
         <h2 className="px-6 text-3xl font-semibold uppercase tracking-wider">{collection!.name}</h2>
@@ -129,43 +117,62 @@ export default function CollectionDetailPage() {
         <Link to="/collections" className="text-gray-400 hover:text-white">
           ← Back to Collections
         </Link>
+        {/* Mobile‐only arrows under the link */}
+        <div className="flex justify-center space-x-4 mt-4 sm:hidden">
+          <button
+            ref={prevRef}
+            className="p-3 bg-black/70 rounded-full text-white hover:bg-black/90 z-10"
+          >
+            <FiChevronLeft size={28} />
+          </button>
+          <button
+            ref={nextRef}
+            className="p-3 bg-black/70 rounded-full text-white hover:bg-black/90 z-10"
+          >
+            <FiChevronRight size={28} />
+          </button>
+        </div>
       </div>
 
-      {/* Prev / Next buttons */}
-      <button
-        ref={prevRef}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-50 p-4 bg-black/70 rounded-full text-white hover:bg-black/90 cursor-pointer"
-      >
-        <FiChevronLeft size={36} />
-      </button>
-      <button
-        ref={nextRef}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-50 p-4 bg-black/70 rounded-full text-white hover:bg-black/90 cursor-pointer"
-      >
-        <FiChevronRight size={36} />
-      </button>
-
-      {/* Inset the Swiper viewport so no clipping */}
-      <div className="pl-16 pr-16">
+      {/* Carousel + Arrows */}
+      <div className="relative">
         <Swiper
-          className="relative pb-8 overflow-visible"
           modules={[Navigation, Pagination, A11y]}
-          spaceBetween={24}
-          slidesPerView={1}
+          className="relative pb-8 overflow-visible"
+          wrapperClass="overflow-visible"
+          navigation={{
+            prevEl: prevRef.current!,
+            nextEl: nextRef.current!,
+          }}
+          pagination={{ clickable: true }}
+          centeredSlidesBounds
           autoHeight
+          breakpoints={{
+            0: {
+              slidesPerView: 1,
+              spaceBetween: 24,
+              slidesOffsetBefore: 0,
+              slidesOffsetAfter: 0,
+            },
+            640: {
+              slidesPerView: 2,
+              spaceBetween: 24,
+              slidesOffsetBefore: 24,
+              slidesOffsetAfter: 24,
+            },
+            1024: {
+              slidesPerView: 3,
+              spaceBetween: 24,
+              slidesOffsetBefore: 24,
+              slidesOffsetAfter: 24,
+            },
+          }}
           onBeforeInit={(swiper) => {
-            // force TS to treat navigation as your object
             const nav = swiper.params.navigation as NavigationOptions;
             nav.prevEl = prevRef.current!;
             nav.nextEl = nextRef.current!;
             swiper.navigation.init();
             swiper.navigation.update();
-          }}
-          navigation={navOptions}
-          pagination={{ clickable: true }}
-          breakpoints={{
-            640: { slidesPerView: 2 },
-            1024: { slidesPerView: 3 },
           }}
         >
           {pagedItems.map((item, idx) => {
@@ -176,12 +183,11 @@ export default function CollectionDetailPage() {
                   key={`${item.source}-${item.artworkId}`}
                   className="flex justify-center"
                 >
-                  <div className="h-60 bg-gray-600 animate-pulse rounded-lg shadow-lg" />
+                  <div className="h-60 w-80 bg-gray-600 animate-pulse rounded-lg shadow-lg" />
                 </SwiperSlide>
               );
             }
 
-            // build artwork for this slide
             const details = q.data;
             const isMet = item.source === "met";
             const artwork: CombinedArtwork = {
@@ -220,20 +226,13 @@ export default function CollectionDetailPage() {
             return (
               <SwiperSlide key={`${item.source}-${item.artworkId}`} className="flex justify-center">
                 <div className="relative overflow-visible transition-transform duration-300 hover:scale-105">
-                  {/* delete button */}
-
-                  {/* The card itself */}
-                  <div className="w-11/12 max-w-sm shadow-lg rounded-lg overflow-hidden">
+                  <div className="w-80 max-w-sm shadow-lg rounded-lg overflow-hidden">
                     <ArtworkCard
                       artwork={artwork}
                       showSource={false}
                       onRemove={() => {
                         if (
-                          window.confirm(
-                            `Are you sure you want to remove “${artwork.title}” from “${
-                              collection!.name
-                            }”?`
-                          )
+                          window.confirm(`Remove “${artwork.title}” from “${collection!.name}”?`)
                         ) {
                           removeMutation.mutate({
                             artworkId: item.artworkId,
@@ -248,6 +247,22 @@ export default function CollectionDetailPage() {
             );
           })}
         </Swiper>
+
+        {/* Prev arrow */}
+        <button
+          ref={prevRef}
+          className="hidden sm:flex pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/70 rounded-full text-white hover:bg-black/90"
+        >
+          <FiChevronLeft size={28} />
+        </button>
+
+        {/* Next arrow */}
+        <button
+          ref={nextRef}
+          className="hidden sm:flex pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/70 rounded-full text-white hover:bg-black/90"
+        >
+          <FiChevronRight size={28} />
+        </button>
       </div>
     </div>
   );
