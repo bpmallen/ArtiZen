@@ -14,7 +14,7 @@ export async function fetchHarvardPage(
   page: number,
   pageSize: number,
   searchTerm: string,
-  filters: HarvardFilters
+  filters: HarvardFilters,
   sort: "dateAsc" | "dateDesc"
 ): Promise<{ artworks: CombinedArtwork[]; total: number }> {
   if (!HARVARD_API_KEY) {
