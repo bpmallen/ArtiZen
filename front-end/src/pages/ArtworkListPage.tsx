@@ -12,6 +12,7 @@ const bgImage = assetUrl("jack-hunter-1L4E_lsIb9Q-unsplash_oycu7r", "1749423015"
 export default function ArtworkListPage() {
   type TabType = "met" | "harvard" | "all";
   const [tab, setTab] = useState<TabType>("met");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false); // ← Added
 
   // MET state
   const [metFilters, setMetFilters] = useState<MetFilters>({});
@@ -95,7 +96,6 @@ export default function ArtworkListPage() {
     else if (tab === "harvard") setHarvPage(newPage);
     else setAllPage(newPage);
   };
-
   const handleNext = () => {
     const newPage = Math.min(totalPages - 1, pageParam + 1);
     if (tab === "met") setMetPage(newPage);
@@ -112,7 +112,6 @@ export default function ArtworkListPage() {
       <section
         className="relative h-90 w-full bg-cover bg-center"
         style={{ backgroundImage: `url(${bgImage})` }}
-        // https://images.unsplash.com/photo-1601887389937-0b02c26b602c?q=80&w=2523&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
       >
         {/* dark overlay */}
         <div className="absolute inset-0 bg-black/40" />
@@ -127,24 +126,26 @@ export default function ArtworkListPage() {
       </section>
 
       <section className="flex bg-black text-white min-h-screen">
-        {/* Sidebar flush-left */}
-        <Sidebar
-          className="w-72"
-          tab={tab}
-          metFilters={metFilters}
-          setMetFilters={setMetFilters}
-          metSort={metSort}
-          setMetSort={setMetSort}
-          departments={departments}
-          harvFilters={harvFilters}
-          setHarvFilters={setHarvFilters}
-          harvSort={harvSort}
-          setHarvSort={setHarvSort}
-          allSort={allSort}
-          setAllSort={setAllSort}
-        />
+        {/* DESKTOP SIDEBAR (hidden on mobile) */}
+        <div className="hidden sm:block w-72">
+          <Sidebar
+            className="w-72"
+            tab={tab}
+            metFilters={metFilters}
+            setMetFilters={setMetFilters}
+            metSort={metSort}
+            setMetSort={setMetSort}
+            departments={departments}
+            harvFilters={harvFilters}
+            setHarvFilters={setHarvFilters}
+            harvSort={harvSort}
+            setHarvSort={setHarvSort}
+            allSort={allSort}
+            setAllSort={setAllSort}
+          />
+        </div>
 
-        {/* Main content centered */}
+        {/* MAIN CONTENT */}
         <div className="flex-1 max-w-7xl mx-auto px-4 py-8">
           {/* Tabs */}
           <div className="flex space-x-6 mb-8 border-b border-text-light">
@@ -168,41 +169,72 @@ export default function ArtworkListPage() {
             ))}
           </div>
 
-          {/* Search Bar */}
-          <div className="flex gap-2 mb-6">
-            <input
-              className="flex-grow border border-text-light rounded-l-lg px-3 py-2 focus:ring-2 focus:ring-primary"
-              placeholder={
-                tab === "met"
-                  ? "Search MET…"
-                  : tab === "harvard"
-                  ? "Search Harvard…"
-                  : "Search both…"
-              }
-              value={tab === "harvard" ? harvInput : metInput}
-              onChange={(e) =>
-                tab === "harvard" ? setHarvInput(e.target.value) : setMetInput(e.target.value)
-              }
-            />
-            <button
-              className="bg-primary text-white px-4 py-2 rounded-r-lg hover:bg-primary/90 transition"
-              onClick={() => {
-                if (tab === "met") {
-                  setMetSearch(metInput.trim());
-                  setMetPage(0);
-                } else if (tab === "harvard") {
-                  setHarvSearch(harvInput.trim());
-                  setHarvPage(0);
-                } else {
-                  setMetSearch(metInput.trim());
-                  setHarvSearch(harvInput.trim());
-                  setAllPage(0);
+          {/* Search Bar + MOBILE FILTER TOGGLE */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-6">
+            <div className="flex-grow flex gap-2">
+              <input
+                className="flex-grow border border-text-light rounded-l-lg px-3 py-2 focus:ring-2 focus:ring-primary"
+                placeholder={
+                  tab === "met"
+                    ? "Search MET…"
+                    : tab === "harvard"
+                    ? "Search Harvard…"
+                    : "Search both…"
                 }
-              }}
+                value={tab === "harvard" ? harvInput : metInput}
+                onChange={(e) =>
+                  tab === "harvard" ? setHarvInput(e.target.value) : setMetInput(e.target.value)
+                }
+              />
+              <button
+                className="bg-primary text-white px-4 py-2 rounded-r-lg hover:bg-primary/90 transition"
+                onClick={() => {
+                  if (tab === "met") {
+                    setMetSearch(metInput.trim());
+                    setMetPage(0);
+                  } else if (tab === "harvard") {
+                    setHarvSearch(harvInput.trim());
+                    setHarvPage(0);
+                  } else {
+                    setMetSearch(metInput.trim());
+                    setHarvSearch(harvInput.trim());
+                    setAllPage(0);
+                  }
+                }}
+              >
+                Search
+              </button>
+            </div>
+
+            {/* MOBILE-ONLY FILTERS TOGGLE */}
+            <button
+              className="sm:hidden text-primary font-medium"
+              onClick={() => setMobileFiltersOpen((o) => !o)}
             >
-              Search
+              {mobileFiltersOpen ? "Hide Filters ▲" : "Show Filters ▼"} {/* ← Added */}
             </button>
           </div>
+
+          {/* MOBILE FILTER DROPDOWN */}
+          {mobileFiltersOpen && (
+            <div className="sm:hidden mb-6 p-4 bg-gray-900 rounded-lg">
+              <Sidebar
+                tab={tab}
+                metFilters={metFilters}
+                setMetFilters={setMetFilters}
+                metSort={metSort}
+                setMetSort={setMetSort}
+                departments={departments}
+                harvFilters={harvFilters}
+                setHarvFilters={setHarvFilters}
+                harvSort={harvSort}
+                setHarvSort={setHarvSort}
+                allSort={allSort}
+                setAllSort={setAllSort}
+                className="w-full"
+              />
+            </div>
+          )}
 
           {/* Results Grid */}
           {error && <p className="text-center text-red-600">Error: {error.message}</p>}
