@@ -4,8 +4,6 @@ export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
-console.log("[apiClient] baseURL =", apiClient.defaults.baseURL);
-
 apiClient.interceptors.response.use(
   (res) => res,
   (err) => {

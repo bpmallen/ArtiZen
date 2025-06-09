@@ -14,9 +14,17 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+const ALLOWED_ORIGINS = ["http://localhost:5173", "https://artizen-curation.netlify.app"];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (incomingOrigin, callback) => {
+      if (!incomingOrigin || ALLOWED_ORIGINS.includes(incomingOrigin)) {
+        // no incomingOrigin means things like mobile apps or Postman—allow if you like
+        return callback(null, true);
+      }
+      callback(new Error(`Origin ${incomingOrigin} not allowed by CORS`));
+    },
     credentials: true,
   })
 );
